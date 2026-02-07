@@ -1,0 +1,39 @@
+name: university_news_app
+description: "A university news app built with Flutter and GetX."
+publish_to: 'none' # Private package
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  get: ^4.7.3
+  firebase_core: ^4.3.0
+  iconsax_flutter: ^1.0.1
+  animations: ^2.1.1
+  connectivity_plus: ^7.0.0
+  shared_preferences: ^2.5.4
+  dio: ^5.9.0
+  cached_network_image: ^3.4.1
+  shimmer: ^3.0.0
+  intl: ^0.20.2
+  flutter_quill: ^11.5.0
+  carousel_slider: ^5.1.1
+  image_picker: ^1.2.1
+  video_player: ^2.10.1
+  url_launcher: ^6.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/logo.png
