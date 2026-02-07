@@ -150,24 +150,39 @@ class PostService {
   // ===================== Bookmarks =====================
   static Future<List<NewsModel>> fetchBookmarkedPosts() async {
     try {
-      final response = await DioClient.dio.get('/users/bookmarks');
+      final response = await DioClient.dio.get('/bookmarks');
 
       if (response.data is! List) {
-        throw Exception('Invalid bookmarks response');
+        throw Exception('Invalid bookmarks response: Expected a List');
       }
 
-      return (response.data as List).map<NewsModel>((item) {
-        if (item is Map<String, dynamic> && item.containsKey('news')) {
-          return NewsModel.fromJson(item['news']);
+      final List<dynamic> bookmarkList = response.data;
+      final List<NewsModel> newsList = [];
+
+      for (var item in bookmarkList) {
+        if (item is Map<String, dynamic>) {
+          // Check if the bookmark item contains a nested 'news' object
+          if (item.containsKey('news') && item['news'] is Map<String, dynamic>) {
+            newsList.add(NewsModel.fromJson(item['news']));
+          } else {
+            // Assume the item itself is the news object
+            newsList.add(NewsModel.fromJson(item));
+          }
+        } else {
+          // Log or handle items that are not in the expected format
+          print('Skipping invalid bookmark item: $item');
         }
-        return NewsModel.fromJson(item);
-      }).toList();
+      }
+      return newsList;
     } on DioException catch (e) {
       throw Exception(
         e.response?.data?['message'] ??
             e.message ??
             'Failed to fetch bookmarks',
       );
+    } catch (e) {
+      // Catch other parsing errors
+      throw Exception('Failed to parse bookmarks: $e');
     }
   }
 

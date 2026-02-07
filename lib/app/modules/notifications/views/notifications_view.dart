@@ -1,17 +1,50 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:university_news_app/app/data/services/notification_service.dart';
+import '../controllers/notifications_controller.dart';
 
 class NotificationsView extends StatelessWidget {
   const NotificationsView({super.key});
 
+  String _formatTimeAgo(BuildContext context, DateTime time) {
+    final difference = DateTime.now().difference(time);
+    if (difference.inDays > 1) {
+      return '${difference.inDays} days ago';
+    } else if (difference.inDays == 1) {
+      return '1 day ago';
+    } else if (difference.inHours > 1) {
+      return '${difference.inHours} hours ago';
+    } else if (difference.inHours == 1) {
+      return '1 hour ago';
+    } else if (difference.inMinutes > 1) {
+      return '${difference.inMinutes} minutes ago';
+    } else if (difference.inMinutes == 1) {
+      return '1 minute ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Instantiate controller
+    final NotificationsController controller = Get.put(NotificationsController());
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(),
-      body: _buildBody(),
-      bottomNavigationBar: _buildBottomActions(),
+      body: Obx(() {
+        if (controller.isLoading.isTrue && controller.notifications.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (controller.notifications.isEmpty) {
+          return _buildEmptyState();
+        }
+        return _buildNotificationsList(controller);
+      }),
+      bottomNavigationBar: _buildBottomActions(controller),
     );
   }
 
@@ -28,7 +61,7 @@ class NotificationsView extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(
-            Icons.arrow_back_ios_rounded,
+            Icons.arrow_back_ios_new_rounded,
             size: 20,
             color: Colors.black87,
           ),
@@ -43,512 +76,210 @@ class NotificationsView extends StatelessWidget {
         ),
       ),
       centerTitle: true,
-      actions: [
-        IconButton(
-          onPressed: () {},
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.settings_outlined,
-              size: 22,
-              color: Colors.black87,
-            ),
-          ),
-        ),
-      ],
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Iconsax.notification_bing, size: 80, color: Colors.grey[300]),
+          const SizedBox(height: 20),
+          Text(
+            'No Notifications',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[500],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'You\'re all caught up!',
+            style: TextStyle(color: Colors.grey[400]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationsList(NotificationsController controller) {
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
       slivers: [
-        // Header with stats
         SliverToBoxAdapter(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.blue.shade50,
-                  Colors.purple.shade50,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blue.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.blue.withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.notifications_active_rounded,
-                    size: 28,
-                    color: Colors.blue,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Recent Activity',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Text(
-                            '12 Unread',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.blue.shade700,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade50,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '+5 new',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.green.shade700,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          child: _buildHeaderCard(controller),
         ),
-
-        // Filter chips
-        SliverToBoxAdapter(
-          child: Container(
-            height: 60,
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              children: [
-                _buildFilterChip('All', true),
-                const SizedBox(width: 8),
-                _buildFilterChip('Unread', false),
-                const SizedBox(width: 8),
-                _buildFilterChip('Mentions', false),
-                const SizedBox(width: 8),
-                _buildFilterChip('System', false),
-                const SizedBox(width: 8),
-                _buildFilterChip('Following', false),
-              ],
-            ),
-          ),
-        ),
-
-        // Today section
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 20, top: 20, bottom: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 6,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(3),
-                    color: Colors.blue,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Today',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Today's notifications
         SliverList(
           delegate: SliverChildBuilderDelegate(
-                (context, index) => _buildNotificationItem(
-              icon: Iconsax.like_1,
-              title: 'New Like',
-              message: 'John Doe liked your post "How to build amazing apps"',
-              time: '2 hours ago',
-              isUnread: true,
-              color: Colors.red,
-              onTap: () {},
-            ),
-            childCount: 4,
+            (context, index) {
+              final notification = controller.notifications[index];
+              return _buildNotificationItem(
+                context,
+                notification: notification,
+                onTap: () => controller.markNotificationAsRead(notification.id),
+              );
+            },
+            childCount: controller.notifications.length,
           ),
         ),
-
-        // Yesterday section
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 20, top: 20, bottom: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 6,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(3),
-                    color: Colors.purple,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Yesterday',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Yesterday's notifications
-        SliverList(
-          delegate: SliverChildBuilderDelegate(
-                (context, index) => _buildNotificationItem(
-              icon: Iconsax.message,
-              title: 'New Comment',
-              message: 'Sarah Johnson commented on your article',
-              time: '1 day ago',
-              isUnread: false,
-              color: Colors.green,
-              onTap: () {},
-            ),
-            childCount: 3,
-          ),
-        ),
-
-        // This week section
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 20, top: 20, bottom: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 6,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(3),
-                    color: Colors.orange,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'This Week',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // This week's notifications
-        SliverList(
-          delegate: SliverChildBuilderDelegate(
-                (context, index) => _buildNotificationItem(
-              icon: Iconsax.user_add,
-              title: 'New Follower',
-              message: 'Michael Brown started following you',
-              time: '3 days ago',
-              isUnread: false,
-              color: Colors.blue,
-              onTap: () {},
-            ),
-            childCount: 5,
-          ),
-        ),
-
-        const SliverToBoxAdapter(
-          child: SizedBox(height: 30),
-        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 30)),
       ],
     );
   }
 
-  Widget _buildFilterChip(String label, bool isActive) {
+  Widget _buildHeaderCard(NotificationsController controller) {
     return Container(
-      margin: const EdgeInsets.only(right: 8),
-      child: Chip(
-        label: Text(label),
-        backgroundColor: isActive ? Colors.blue : Colors.grey[100],
-        labelStyle: TextStyle(
-          color: isActive ? Colors.white : Colors.grey[700],
-          fontWeight: FontWeight.w500,
-        ),
-        avatar: isActive
-            ? const Icon(Icons.check, size: 16, color: Colors.white)
-            : null,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNotificationItem({
-    required IconData icon,
-    required String title,
-    required String message,
-    required String time,
-    required bool isUnread,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          splashColor: color.withOpacity(0.1),
-          highlightColor: color.withOpacity(0.05),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Colors.grey[200]!,
-                width: 1,
-              ),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Icon Container
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: color,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              title,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: isUnread ? Colors.black87 : Colors.grey[600],
-                              ),
-                            ),
-                          ),
-                          if (isUnread)
-                            Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        message,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                          height: 1.4,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(
-                            Iconsax.clock,
-                            size: 14,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            time,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                          const Spacer(),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[50],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'View',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomActions() {
-    return Container(
-      height: 70,
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey[200]!,
-            width: 1,
-          ),
+        gradient: LinearGradient(
+          colors: [Colors.blue.shade50, Colors.purple.shade50],
         ),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: [
+          const Icon(Icons.notifications_active_rounded, size: 32, color: Colors.blue),
+          const SizedBox(width: 16),
           Expanded(
-            child: TextButton.icon(
-              onPressed: () {
-                // Mark all as read
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.grey[600],
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              icon: const Icon(Icons.check_circle_outline, size: 20),
-              label: const Text(
-                'Mark All as Read',
-                style: TextStyle(fontSize: 14),
-              ),
-            ),
-          ),
-          Container(
-            width: 1,
-            height: 24,
-            color: Colors.grey[300],
-          ),
-          Expanded(
-            child: TextButton.icon(
-              onPressed: () {
-                // Clear all notifications
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              icon: const Icon(Icons.delete_outline, size: 20),
-              label: const Text(
-                'Clear All',
-                style: TextStyle(fontSize: 14),
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Activity', style: TextStyle(color: Colors.grey)),
+                Obx(() => Text(
+                  '${controller.unreadCount} Unread',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue.shade700),
+                )),
+              ],
             ),
           ),
         ],
       ),
     );
   }
-}
 
-// Optional: Add a floating action button for quick actions
-// You can add this to the Scaffold if needed
-Widget _buildFloatingActionButton() {
-  return FloatingActionButton(
-    onPressed: () {
-      // Quick action - maybe filter or search notifications
-    },
-    backgroundColor: Colors.blue,
-    foregroundColor: Colors.white,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: const Icon(Iconsax.filter, size: 24),
-  );
+  Widget _buildNotificationItem(
+    BuildContext context, {
+    required NotificationModel notification,
+    required VoidCallback onTap,
+  }) {
+    bool isUnread = !notification.isRead;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+      decoration: BoxDecoration(
+        color: isUnread ? Colors.blue.withOpacity(0.05) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: CachedNetworkImage(
+                    imageUrl: notification.sender.avatar,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(color: Colors.grey[200]),
+                    errorWidget: (context, url, error) => Container(
+                      color: Colors.grey[200],
+                      child: const Icon(Iconsax.user, color: Colors.grey),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text.rich(
+                        TextSpan(
+                          text: '${notification.sender.name} ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: isUnread ? Colors.black87 : Colors.grey[700],
+                          ),
+                          children: [
+                            TextSpan(
+                              text: notification.message,
+                              style: TextStyle(
+                                fontWeight: FontWeight.normal,
+                                color: isUnread ? Colors.black87 : Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                           Icon(Iconsax.clock, size: 14, color: Colors.grey[400]),
+                          const SizedBox(width: 4),
+                          Text(
+                            _formatTimeAgo(context, notification.createdAt),
+                            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                          ),
+                          const Spacer(),
+                          if(isUnread)
+                             Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                color: Colors.blue,
+                                shape: BoxShape.circle,
+                              ),
+                            )
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomActions(NotificationsController controller) {
+    return Container(
+      height: 70,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey[200]!)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextButton.icon(
+              onPressed: controller.markAllAsRead,
+              icon: const Icon(Icons.check_circle_outline, size: 20),
+              label: const Text('Mark All as Read'),
+            ),
+          ),
+          Container(width: 1, height: 24, color: Colors.grey[300]),
+          Expanded(
+            child: TextButton.icon(
+              onPressed: controller.clearAll,
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              icon: const Icon(Icons.delete_outline, size: 20),
+              label: const Text('Clear All'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
