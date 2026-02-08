@@ -12,11 +12,14 @@ import '../../about/views/about_view.dart';
 import '../../goods/views/goods_view.dart';
 import '../../post/views/post_view.dart';
 import '../controllers/home_controller.dart';
+import '../../story/controllers/story_controller.dart';
+import '../../../data/models/story_model.dart';
 
 import '../../category/views/category_view.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
+  static final StoryController storyController = Get.put(StoryController());
 
   @override
   Widget build(BuildContext context) {
@@ -596,13 +599,82 @@ class HomeView extends GetView<HomeController> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                _buildSearchBox(),
+                _buildStoriesRow(),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildStoriesRow() {
+    return Obx(() {
+      final stories = storyController.stories;
+      if (stories.isEmpty) {
+        return const SizedBox.shrink();
+      }
+      return SizedBox(
+        height: 78,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: stories.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (context, index) {
+            final story = stories[index];
+            final user = story.user;
+            final initials = user.name.isNotEmpty ? user.name[0] : '?';
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: () => Get.toNamed('/story-view', arguments: story),
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: CircleAvatar(
+                      radius: 24,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundImage:
+                          user.avatar == null || user.avatar!.isEmpty
+                              ? null
+                              : CachedNetworkImageProvider(user.avatar!),
+                      child: user.avatar == null || user.avatar!.isEmpty
+                          ? Text(
+                              initials,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                SizedBox(
+                  width: 56,
+                  child: Text(
+                    user.name.isEmpty ? 'Unknown' : user.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    });
   }
 
   String _getGreeting() {
@@ -612,70 +684,7 @@ class HomeView extends GetView<HomeController> {
     return 'Good Evening! 🌙';
   }
 
-  Widget _buildSearchBox() {
-    return GestureDetector(
-      onTap: () => Get.toNamed('/search'), // Navigate to search page
-      child: Container(
-        height: 51, // Slightly reduced to prevent 1px overflow
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.12),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // 🔍 Search Icon
-            Icon(Iconsax.search_normal, color: AppColors.primary, size: 22),
-
-            const SizedBox(width: 12),
-
-            // 📝 Search Text
-            Expanded(
-              child: IgnorePointer(
-                child: TextField(
-                  readOnly: true,
-                  style: const TextStyle(fontSize: 14, color: Colors.black87),
-                  decoration: InputDecoration(
-                    hintText: 'Search articles, news, topics...',
-                    hintStyle: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade500,
-                    ),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero, // FIX overflow
-                  ),
-                ),
-              ),
-            ),
-
-            // ⚙️ Filter Button
-            GestureDetector(
-              onTap: () {
-                // Optional: open filter bottom sheet
-                // Get.bottomSheet(FilterView());
-              },
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(Iconsax.filter, size: 18, color: AppColors.primary),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  
 }
 
 // ===================== MODERN NEWS CARD =====================

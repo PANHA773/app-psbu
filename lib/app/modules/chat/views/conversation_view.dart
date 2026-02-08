@@ -32,16 +32,8 @@ class ConversationView extends GetView<ChatController> {
                 return const Center(child: Text('No user selected'));
               }
 
-              final filteredMessages = controller.messages.where((m) {
-                final isFromSelected = m.sender.id == selectedUser.id;
-                final isToSelected = m.recipient == selectedUser.id;
-                final isToMe = m.recipient == currentUserId;
-                final isFromMe = m.sender.id == currentUserId;
-
-                return (isFromSelected && isToMe) || (isFromMe && isToSelected);
-              }).toList();
-
-              if (filteredMessages.isEmpty) {
+              final messages = controller.conversationMessages;
+              if (messages.isEmpty) {
                 return _buildEmptyState();
               }
 
@@ -50,9 +42,9 @@ class ConversationView extends GetView<ChatController> {
                   horizontal: 16,
                   vertical: 20,
                 ),
-                itemCount: filteredMessages.length,
+                itemCount: messages.length,
                 itemBuilder: (context, index) {
-                  final message = filteredMessages[index];
+                  final message = messages[index];
                   final bool isMe = message.sender.id == currentUserId;
                   return _buildChatBubble(message, isMe);
                 },

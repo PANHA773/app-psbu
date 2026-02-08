@@ -4,6 +4,9 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../controllers/chat_controller.dart';
 import '../../../data/models/chat_message_model.dart';
+import '../../../data/models/friend_request_model.dart';
+import '../../../data/models/friend_user_model.dart';
+import '../../add-friend/controllers/add_friend_controller.dart';
 
 class ChatView extends StatefulWidget {
   const ChatView({super.key});
@@ -16,16 +19,24 @@ class _ChatViewState extends State<ChatView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final controller = Get.put(ChatController());
+  final friendController = Get.put(AddFriendController());
+  final TextEditingController addFriendUserIdController =
+      TextEditingController();
+  final TextEditingController addFriendMessageController =
+      TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    friendController.fetchAll();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    addFriendUserIdController.dispose();
+    addFriendMessageController.dispose();
     super.dispose();
   }
 
@@ -48,7 +59,7 @@ class _ChatViewState extends State<ChatView>
               controller: _tabController,
               children: [
                 _buildChatsTab(),
-                _buildGroupsTab(),
+             
                 _buildFriendsTab(),
               ],
             ),
@@ -99,7 +110,7 @@ class _ChatViewState extends State<ChatView>
         IconButton(
           onPressed: () {
             // New message
-            Get.toNamed('/new-message');
+            Get.toNamed('/add-friend');
           },
           icon: Container(
             padding: const EdgeInsets.all(8),
@@ -197,16 +208,7 @@ class _ChatViewState extends State<ChatView>
               ],
             ),
           ),
-          Tab(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Iconsax.people, size: 18),
-                SizedBox(width: 6),
-                Text('Groups'),
-              ],
-            ),
-          ),
+
           Tab(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -277,16 +279,14 @@ class _ChatViewState extends State<ChatView>
                 ),
               );
             }
-            if (controller.messages.isEmpty) {
-              return const Center(child: Text("No messages yet"));
+            if (controller.conversations.isEmpty) {
+              return const Center(child: Text("No conversations yet"));
             }
-            // Use last message as "recent" for demo purposes
-            // In a real app we'd group by conversation
             return Column(
-              children: controller.messages
+              children: controller.conversations
                   .map(
-                    (message) => _buildChatItem(
-                      message: message,
+                    (user) => _buildConversationItem(
+                      user: user,
                       isUnread: false,
                       isPinned: false,
                     ),
@@ -364,8 +364,8 @@ class _ChatViewState extends State<ChatView>
     );
   }
 
-  Widget _buildChatItem({
-    required ChatMessageModel message,
+  Widget _buildConversationItem({
+    required ChatSender user,
     required bool isUnread,
     required bool isPinned,
   }) {
@@ -376,7 +376,7 @@ class _ChatViewState extends State<ChatView>
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: () {
-            controller.setSelectedUser(message.sender);
+            controller.setSelectedUser(user);
             Get.toNamed('/conversation');
           },
           borderRadius: BorderRadius.circular(16),
@@ -400,7 +400,7 @@ class _ChatViewState extends State<ChatView>
                         shape: BoxShape.circle,
                         image: DecorationImage(
                           image: NetworkImage(
-                            message.sender.avatar ??
+                            user.avatar ??
                                 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=500&auto=format&fit=crop',
                           ),
                           fit: BoxFit.cover,
@@ -433,7 +433,7 @@ class _ChatViewState extends State<ChatView>
                         children: [
                           Expanded(
                             child: Text(
-                              message.sender.name,
+                              user.name,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: isUnread
@@ -466,7 +466,7 @@ class _ChatViewState extends State<ChatView>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        message.content,
+                        'Tap to continue private chat',
                         style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -539,7 +539,7 @@ class _ChatViewState extends State<ChatView>
         Padding(
           padding: const EdgeInsets.only(left: 20, top: 24, bottom: 12),
           child: Text(
-            'Your Groups',
+            'Send Friend Request',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -547,179 +547,114 @@ class _ChatViewState extends State<ChatView>
             ),
           ),
         ),
-
-        ...List.generate(
-          5,
-          (index) => _buildGroupItem(
-            memberCount: index * 7 + 10,
-            isOnline: index % 2 == 0,
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+          child: Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: addFriendUserIdController,
+                    decoration: const InputDecoration(
+                      labelText: 'User ID',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: addFriendMessageController,
+                    decoration: const InputDecoration(
+                      labelText: 'Message (optional)',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final userId = addFriendUserIdController.text.trim();
+                        if (userId.isEmpty) return;
+                        friendController.sendRequest(
+                          userId,
+                          message: addFriendMessageController.text.trim(),
+                        );
+                        addFriendUserIdController.clear();
+                        addFriendMessageController.clear();
+                      },
+                      child: const Text('Send Request'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildGroupItem({required int memberCount, required bool isOnline}) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: () {
-            Get.toNamed('/group-chat');
-          },
-          borderRadius: BorderRadius.circular(16),
-          splashColor: Colors.green.withOpacity(0.1),
-          highlightColor: Colors.green.withOpacity(0.05),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey[200]!, width: 1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                // Group Avatar
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(
-                    Iconsax.people,
-                    size: 28,
-                    color: Colors.green,
-                  ),
-                ),
-                const SizedBox(width: 16),
-
-                // Group Info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Flutter Developers',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${memberCount} members • ${isOnline ? '12 online now' : 'Last active 2h ago'}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Public',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.green,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Tech',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.blue,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Notification Status
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Iconsax.notification,
-                    size: 20,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 
   Widget _buildFriendsTab() {
-    return ListView(
-      physics: const BouncingScrollPhysics(),
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 20, top: 24, bottom: 12),
-          child: Text(
-            'Friend Requests',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.grey[800],
+    return Obx(() {
+      if (friendController.isLoading.value) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      return ListView(
+        physics: const BouncingScrollPhysics(),
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 20, top: 24, bottom: 12),
+            child: Text(
+              'Friend Requests (${friendController.receivedRequests.length})',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey[800],
+              ),
             ),
           ),
-        ),
-
-        ...List.generate(3, (index) => _buildFriendRequestItem()),
-
-        Padding(
-          padding: const EdgeInsets.only(left: 20, top: 24, bottom: 12),
-          child: Text(
-            'All Friends (42)',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Colors.grey[800],
+          if (friendController.receivedRequests.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Text('No friend requests'),
+            )
+          else
+            ...friendController.receivedRequests
+                .map(_buildFriendRequestItem)
+                .toList(),
+          Padding(
+            padding: const EdgeInsets.only(left: 20, top: 24, bottom: 12),
+            child: Text(
+              'All Friends (${friendController.friends.length})',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Colors.grey[800],
+              ),
             ),
           ),
-        ),
-
-        ...List.generate(
-          8,
-          (index) => _buildFriendItem(isOnline: index % 2 == 0),
-        ),
-      ],
-    );
+          if (friendController.friends.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Text('No friends yet'),
+            )
+          else
+            ...friendController.friends.map(_buildFriendItem).toList(),
+        ],
+      );
+    });
   }
 
-  Widget _buildFriendRequestItem() {
+  Widget _buildFriendRequestItem(FriendRequestModel request) {
+    final user = request.requester;
+    if (user == null) return const SizedBox.shrink();
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       child: Material(
@@ -733,20 +668,7 @@ class _ChatViewState extends State<ChatView>
           ),
           child: Row(
             children: [
-              // Avatar
-              Container(
-                width: 48,
-                height: 48,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  image: DecorationImage(
-                    image: NetworkImage(
-                      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop',
-                    ),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
+              _buildFriendAvatar(user),
               const SizedBox(width: 16),
 
               // Friend Info
@@ -755,7 +677,7 @@ class _ChatViewState extends State<ChatView>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Sarah Johnson',
+                      user.name.isEmpty ? 'Unknown' : user.name,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -764,9 +686,18 @@ class _ChatViewState extends State<ChatView>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '12 mutual friends',
+                      user.email,
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
+                    if (request.message.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        request.message,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -774,14 +705,17 @@ class _ChatViewState extends State<ChatView>
               // Action Buttons
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.blue,
-                      borderRadius: BorderRadius.circular(12),
+                  TextButton(
+                    onPressed: () => friendController.acceptRequest(request.id),
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: const Text(
                       'Accept',
@@ -793,11 +727,15 @@ class _ChatViewState extends State<ChatView>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
+                  TextButton(
+                    onPressed: () =>
+                        friendController.declineRequest(request.id),
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.grey[100],
+                      padding: const EdgeInsets.all(8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: const Icon(
                       Icons.close,
@@ -814,7 +752,7 @@ class _ChatViewState extends State<ChatView>
     );
   }
 
-  Widget _buildFriendItem({required bool isOnline}) {
+  Widget _buildFriendItem(FriendUser user) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       child: Material(
@@ -835,37 +773,7 @@ class _ChatViewState extends State<ChatView>
             ),
             child: Row(
               children: [
-                // Avatar with Online Status
-                Stack(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        image: DecorationImage(
-                          image: NetworkImage(
-                            'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop',
-                          ),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: isOnline ? Colors.green : Colors.grey,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                _buildFriendAvatar(user),
                 const SizedBox(width: 16),
 
                 // Friend Info
@@ -874,7 +782,7 @@ class _ChatViewState extends State<ChatView>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Emma Wilson',
+                        user.name.isEmpty ? 'Unknown' : user.name,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -883,10 +791,10 @@ class _ChatViewState extends State<ChatView>
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        isOnline ? 'Online' : 'Last seen 2h ago',
+                        user.email,
                         style: TextStyle(
                           fontSize: 12,
-                          color: isOnline ? Colors.green : Colors.grey[600],
+                          color: Colors.grey[600],
                         ),
                       ),
                     ],
@@ -929,6 +837,14 @@ class _ChatViewState extends State<ChatView>
         ),
       ),
     );
+  }
+
+  Widget _buildFriendAvatar(FriendUser user) {
+    final initials = user.name.isNotEmpty ? user.name[0] : '?';
+    if (user.avatar == null || user.avatar!.isEmpty) {
+      return CircleAvatar(child: Text(initials));
+    }
+    return CircleAvatar(backgroundImage: NetworkImage(user.avatar!));
   }
 
   Widget _buildFloatingActionButton() {

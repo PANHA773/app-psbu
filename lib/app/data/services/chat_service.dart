@@ -25,13 +25,45 @@ class ChatService {
     }
   }
 
+  Future<List<ChatSender>> getConversations() async {
+    try {
+      final response = await _dio.get('/chat/conversations');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data;
+        return data.map((json) => ChatSender.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load conversations');
+      }
+    } catch (e) {
+      print('❌ ChatService Conversations Error: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<ChatMessageModel>> getConversationMessages(String userId) async {
+    try {
+      final response = await _dio.get('/chat/conversation/$userId');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data;
+        return data.map((json) => ChatMessageModel.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load conversation messages');
+      }
+    } catch (e) {
+      print('❌ ChatService Conversation Error: $e');
+      rethrow;
+    }
+  }
+
   Future<void> sendMessage(String content, {String? recipientId}) async {
     try {
       await _dio.post(
         '/chat',
         data: {
           'content': content,
-          if (recipientId != null) 'recipient': recipientId,
+          if (recipientId != null) 'recipientId': recipientId,
         },
       );
     } catch (e) {

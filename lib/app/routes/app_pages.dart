@@ -34,6 +34,7 @@ import '../modules/settings/bindings/settings_binding.dart';
 import '../modules/settings/views/settings_view.dart';
 import '../modules/splash/bindings/splash_binding.dart';
 import '../modules/splash/views/splash_view.dart';
+import '../modules/story/views/story_view.dart';
 
 part 'app_routes.dart';
 
@@ -138,6 +139,11 @@ class AppPages {
       name: _Paths.CONVERSATION,
       page: () => const ConversationView(),
       binding: ChatBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage(
+      name: _Paths.STORY_VIEW,
+      page: () => const StoryView(),
       middlewares: [AuthMiddleware()],
     ),
      GetPage(

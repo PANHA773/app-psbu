@@ -5,33 +5,23 @@ import '../../../data/services/auth_service.dart';
 
 class ChatController extends GetxController {
   final ChatService _chatService = ChatService();
-  final RxList<ChatMessageModel> messages = <ChatMessageModel>[].obs;
+  final RxList<ChatSender> conversations = <ChatSender>[].obs;
+  final RxList<ChatMessageModel> conversationMessages =
+      <ChatMessageModel>[].obs;
   final RxBool isLoading = false.obs;
   final RxString error = ''.obs;
   final Rx<ChatSender?> selectedUser = Rx<ChatSender?>(null);
   final RxMap<String, dynamic> currentUser = <String, dynamic>{}.obs;
 
   List<ChatSender> get recentConversations {
-    final currentUserId = currentUser['_id']?.toString();
-    final Map<String, ChatSender> uniqueUsers = {};
-
-    for (var msg in messages) {
-      if (msg.sender.id != currentUserId) {
-        uniqueUsers[msg.sender.id] = msg.sender;
-      }
-      // If we have recipient info and it's not us
-      if (msg.recipient != null && msg.recipient != currentUserId) {
-        // We might need a full user object for recipient if it's not in the message list
-      }
-    }
-    return uniqueUsers.values.toList();
+    return conversations;
   }
 
   @override
   void onInit() {
     super.onInit();
     fetchCurrentUser();
-    fetchMessages();
+    fetchConversations();
   }
 
   Future<void> fetchCurrentUser() async {
@@ -47,16 +37,33 @@ class ChatController extends GetxController {
 
   void setSelectedUser(ChatSender user) {
     selectedUser.value = user;
+    fetchConversationMessages(user.id);
   }
 
-  Future<void> fetchMessages() async {
+  Future<void> fetchConversations() async {
     try {
       isLoading.value = true;
       error.value = '';
-      final fetchedMessages = await _chatService.getMessages();
-      messages.assignAll(fetchedMessages);
+      final fetchedConversations = await _chatService.getConversations();
+      conversations.assignAll(fetchedConversations);
     } catch (e) {
       print('❌ ChatController Error: $e');
+      error.value = 'Failed to load conversations: $e';
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> fetchConversationMessages(String userId) async {
+    try {
+      isLoading.value = true;
+      error.value = '';
+      final fetchedMessages = await _chatService.getConversationMessages(
+        userId,
+      );
+      conversationMessages.assignAll(fetchedMessages);
+    } catch (e) {
+      print('❌ ChatController Conversation Error: $e');
       error.value = 'Failed to load messages: $e';
     } finally {
       isLoading.value = false;
@@ -71,7 +78,11 @@ class ChatController extends GetxController {
         content,
         recipientId: selectedUser.value?.id,
       );
-      fetchMessages(); // Refresh after sending
+      final userId = selectedUser.value?.id;
+      if (userId != null) {
+        fetchConversationMessages(userId);
+      }
+      fetchConversations();
     } catch (e) {
       print('❌ Send Message Error: $e');
       Get.snackbar('Error', 'Failed to send message');
