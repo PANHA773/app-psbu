@@ -77,6 +77,47 @@ class AuthService {
     }
   }
 
+  // ================== SOCIAL LOGIN ==================
+  static Future<Response> loginWithGoogle(String idToken) async {
+    try {
+      final response = await DioClient.dio.post(
+        '/auth/google',
+        data: {'idToken': idToken},
+      );
+
+      final tokenValue = response.data['token'];
+      if (tokenValue != null) {
+        await saveToken(tokenValue);
+      } else {
+        print('⚠️ No token returned from Google login');
+      }
+
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  static Future<Response> loginWithFacebook(String accessToken) async {
+    try {
+      final response = await DioClient.dio.post(
+        '/auth/facebook',
+        data: {'accessToken': accessToken},
+      );
+
+      final tokenValue = response.data['token'];
+      if (tokenValue != null) {
+        await saveToken(tokenValue);
+      } else {
+        print('⚠️ No token returned from Facebook login');
+      }
+
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // ================== PROFILE ==================
 
   static Future<Response> updateProfile({String? name, File? image}) async {

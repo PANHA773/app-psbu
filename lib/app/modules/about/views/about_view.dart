@@ -194,6 +194,17 @@ class AboutView extends StatelessWidget {
                           children: about.socialLinks.map(_buildSocialButton).toList(), // ✅ clean
                         ),
                       ),
+                    const SizedBox(height: 24),
+                    const Center(
+                      child: Text(
+                        'មេត្តា សតិ បញ្ញា',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 40),
                   ],
                 ),

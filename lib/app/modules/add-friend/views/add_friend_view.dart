@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../data/models/friend_request_model.dart';
 import '../../../data/models/friend_user_model.dart';
 import '../controllers/add_friend_controller.dart';
@@ -28,14 +29,59 @@ class _AddFriendViewState extends State<AddFriendView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Add Friends'),
-        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () => Get.back(),
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_rounded,
+              size: 20,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'Add Friends',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+            SizedBox(height: 2),
+            Text(
+              'Requests and people',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        centerTitle: false,
         actions: [
           IconButton(
             onPressed: controller.fetchAll,
-            icon: const Icon(Icons.refresh),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Iconsax.refresh,
+                size: 22,
+                color: Colors.black87,
+              ),
+            ),
           ),
         ],
       ),
@@ -45,12 +91,12 @@ class _AddFriendViewState extends State<AddFriendView> {
         }
 
         return ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
           children: [
             if (controller.error.value.isNotEmpty)
               _buildErrorBanner(controller.error.value),
-          
-            const SizedBox(height: 16),
+
+            const SizedBox(height: 20),
             _buildSectionTitle('Received Requests'),
             _buildRequestsList(controller.receivedRequests, isReceived: true),
             const SizedBox(height: 16),
@@ -98,10 +144,27 @@ class _AddFriendViewState extends State<AddFriendView> {
 
   Widget _buildSectionTitle(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 6,
+            height: 22,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(3),
+              color: Colors.orange,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -150,15 +213,16 @@ class _AddFriendViewState extends State<AddFriendView> {
   }
 
   Widget _buildAllUserItem(FriendUser user) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return _buildListCard(
       child: ListTile(
         leading: _buildAvatar(user),
         title: Text(user.name.isEmpty ? 'Unknown' : user.name),
         trailing: TextButton(
           onPressed: () => controller.sendRequest(user.id),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.orange,
+            textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          ),
           child: const Text('Add'),
         ),
       ),
@@ -171,7 +235,7 @@ class _AddFriendViewState extends State<AddFriendView> {
       onChanged: (_) => setState(() {}),
       decoration: InputDecoration(
         hintText: 'Search users by name',
-        prefixIcon: const Icon(Icons.search),
+        prefixIcon: const Icon(Iconsax.search_normal, size: 20),
         suffixIcon: searchController.text.isEmpty
             ? null
             : IconButton(
@@ -179,9 +243,15 @@ class _AddFriendViewState extends State<AddFriendView> {
                   searchController.clear();
                   setState(() {});
                 },
-                icon: const Icon(Icons.clear),
+                icon: const Icon(Iconsax.close_circle, size: 18),
               ),
-        border: const OutlineInputBorder(),
+        filled: true,
+        fillColor: Colors.grey[100],
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
       ),
     );
   }
@@ -199,10 +269,7 @@ class _AddFriendViewState extends State<AddFriendView> {
     FriendRequestModel request, {
     required bool isReceived,
   }) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return _buildListCard(
       child: ListTile(
         leading: _buildAvatar(user),
         title: Text(user.name.isEmpty ? 'Unknown' : user.name),
@@ -219,10 +286,18 @@ class _AddFriendViewState extends State<AddFriendView> {
                 children: [
                   TextButton(
                     onPressed: () => controller.acceptRequest(request.id),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.orange,
+                      textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     child: const Text('Accept'),
                   ),
                   TextButton(
                     onPressed: () => controller.declineRequest(request.id),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey,
+                      textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     child: const Text('Decline'),
                   ),
                 ],
@@ -236,17 +311,35 @@ class _AddFriendViewState extends State<AddFriendView> {
   }
 
   Widget _buildFriendItem(FriendUser user) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return _buildListCard(
       child: ListTile(
         leading: _buildAvatar(user),
         title: Text(user.name.isEmpty ? 'Unknown' : user.name),
         subtitle: null,
         trailing: TextButton(
           onPressed: () => controller.removeFriend(user.id),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.redAccent,
+            textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          ),
           child: const Text('Remove'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListCard({required Widget child}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey[200]!, width: 1),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: child,
         ),
       ),
     );

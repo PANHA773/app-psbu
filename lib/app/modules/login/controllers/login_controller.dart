@@ -1,6 +1,6 @@
-import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide Response;
 import '../../../data/services/auth_service.dart';
 import '../../auth/controllers/auth_controller.dart';
 
@@ -11,6 +11,21 @@ class LoginController extends GetxController {
 
   var isLoading = false.obs;
 
+  Future<void> _handleLoginResponse(dio.Response response) async {
+    if (response.statusCode == 200 && response.data['token'] != null) {
+      await AuthService.saveToken(response.data['token']);
+
+      // Update AuthController state
+      try {
+        await Get.find<AuthController>().checkLogin();
+      } catch (_) {}
+
+      Get.offAllNamed('/home');
+    } else {
+      throw Exception('Login failed. Please try again.');
+    }
+  }
+
   void login() async {
     if (formKey.currentState!.validate()) {
       try {
@@ -20,19 +35,8 @@ class LoginController extends GetxController {
           passwordController.text,
         );
 
-        if (response.statusCode == 200 && response.data['token'] != null) {
-          await AuthService.saveToken(response.data['token']);
-
-          // Update AuthController state
-          try {
-            await Get.find<AuthController>().checkLogin();
-          } catch (_) {}
-
-          Get.offAllNamed('/home');
-        } else {
-          throw Exception('Login failed. Please check your credentials.');
-        }
-      } on DioException catch (e) {
+        await _handleLoginResponse(response);
+      } on dio.DioException catch (e) {
         final errorMsg =
             e.response?.data?['message'] ?? 'Login failed. Please try again.';
         Get.snackbar(
@@ -53,6 +57,82 @@ class LoginController extends GetxController {
       } finally {
         isLoading(false);
       }
+    }
+  }
+
+  void loginWithGoogleToken(String idToken) async {
+    if (idToken.trim().isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Google idToken is required.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+      return;
+    }
+    try {
+      isLoading(true);
+      final response = await AuthService.loginWithGoogle(idToken.trim());
+      await _handleLoginResponse(response);
+    } on dio.DioException catch (e) {
+      final errorMsg =
+          e.response?.data?['message'] ?? 'Google login failed. Please try again.';
+      Get.snackbar(
+        'Error',
+        errorMsg,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        e.toString().replaceAll('Exception: ', ''),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  void loginWithFacebookToken(String accessToken) async {
+    if (accessToken.trim().isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Facebook accessToken is required.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+      return;
+    }
+    try {
+      isLoading(true);
+      final response = await AuthService.loginWithFacebook(accessToken.trim());
+      await _handleLoginResponse(response);
+    } on dio.DioException catch (e) {
+      final errorMsg =
+          e.response?.data?['message'] ?? 'Facebook login failed. Please try again.';
+      Get.snackbar(
+        'Error',
+        errorMsg,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        e.toString().replaceAll('Exception: ', ''),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading(false);
     }
   }
 }

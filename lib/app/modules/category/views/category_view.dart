@@ -81,7 +81,7 @@ class CategoryView extends GetView<CategoryController> {
                         ),
                         child: category.image == null
                             ? const Icon(
-                                Icons.folder,
+                                Icons.shopping_bag,
                                 color: AppColors.primary,
                                 size: 40,
                               )

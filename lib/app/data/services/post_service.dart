@@ -72,6 +72,24 @@ class PostService {
     }
   }
 
+  static Future<List<NewsModel>> fetchPostsByAuthor(String authorId) async {
+    try {
+      final response = await DioClient.dio.get(
+        '/news',
+        queryParameters: {'author': authorId},
+      );
+      final data = _extractList(response.data);
+
+      return data.map((json) => NewsModel.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw Exception(
+        e.response?.data?['message'] ??
+            e.message ??
+            'Failed to fetch posts by author',
+      );
+    }
+  }
+
   static Future<NewsModel> fetchPost(String postId) async {
     try {
       final response = await DioClient.dio.get('/news/$postId');

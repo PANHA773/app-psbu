@@ -11,6 +11,7 @@ import '../../../data/models/video/views/video_player_screen.dart';
 import '../../about/views/about_view.dart';
 import '../../goods/views/goods_view.dart';
 import '../../post/views/post_view.dart';
+import '../../my-posts/views/my_posts_view.dart';
 import '../controllers/home_controller.dart';
 import '../../story/controllers/story_controller.dart';
 import '../../../data/models/story_model.dart';
@@ -28,6 +29,7 @@ class HomeView extends GetView<HomeController> {
       const CategoryView(),
       PostView(),
       const GoodsView(),
+      const MyPostsView(),
       ProfileView(),
     ];
 
@@ -60,15 +62,16 @@ class HomeView extends GetView<HomeController> {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildNavItem(Iconsax.home_2, 'Home', 0),
-              _buildNavItem(Iconsax.category_2, 'Categories', 1),
-              _buildNavItem(Iconsax.add_circle, 'Post', 2),
-              _buildNavItem(Iconsax.shop, 'Goods', 3),
-              _buildNavItem(Iconsax.profile_circle, 'Profile', 4),
+              Expanded(child: _buildNavItem(Iconsax.home_2, 'Home', 0)),
+              Expanded(child: _buildNavItem(Iconsax.category_2, 'Categories', 1)),
+              Expanded(child: _buildNavItem(Iconsax.add_circle, 'Post', 2)),
+              Expanded(child: _buildNavItem(Iconsax.shop, 'Goods', 3)),
+              Expanded(child: _buildNavItem(Iconsax.document, 'My Posts', 4)),
+              Expanded(child: _buildNavItem(Iconsax.profile_circle, 'Profile', 5)),
             ],
           ),
         ),
@@ -83,31 +86,32 @@ class HomeView extends GetView<HomeController> {
       onTap: () => controller.changeTab(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
           color: isActive
               ? AppColors.primary.withOpacity(0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
               size: 22,
               color: isActive ? AppColors.primary : Colors.grey[600],
             ),
-            if (isActive) ...[
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: isActive ? AppColors.primary : Colors.grey[600],
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
               ),
-            ],
+            ),
           ],
         ),
       ),

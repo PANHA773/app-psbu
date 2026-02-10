@@ -17,6 +17,7 @@ abstract class Routes {
   static const ADD_FRIEND = _Paths.ADD_FRIEND;
   static const CREATE_GROUP = _Paths.CREATE_GROUP;
   static const NEW_MESSAGE = _Paths.NEW_MESSAGE;
+  static const MY_POSTS = _Paths.MY_POSTS;
   static const SETTINGS = _Paths.SETTINGS;
   static const ABOUT = _Paths.ABOUT;
   static const CONVERSATION = _Paths.CONVERSATION;
@@ -39,6 +40,7 @@ abstract class _Paths {
   static const ADD_FRIEND = '/add-friend';
   static const CREATE_GROUP = '/create-group';
   static const NEW_MESSAGE = '/new-message';
+  static const MY_POSTS = '/my-posts';
   static const SETTINGS = '/settings';
   static const ABOUT = '/about';
   static const CONVERSATION = '/conversation';

@@ -97,7 +97,9 @@ class LoginView extends GetView<LoginController> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
+                _buildSocialSection(context, ctrl),
+                const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -155,6 +157,112 @@ class LoginView extends GetView<LoginController> {
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSocialSection(BuildContext context, LoginController ctrl) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: Divider(color: Colors.grey[300])),
+            const SizedBox(width: 12),
+            const Text(
+              'Or continue with',
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Divider(color: Colors.grey[300])),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _promptToken(
+                  context,
+                  title: 'Google Sign-In',
+                  hint: 'Paste Google idToken',
+                  onSubmit: ctrl.loginWithGoogleToken,
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: BorderSide(color: Colors.grey[300]!),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                icon: const Icon(Iconsax.google, color: Colors.redAccent),
+                label: const Text(
+                  'Google',
+                  style: TextStyle(color: Colors.black87),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _promptToken(
+                  context,
+                  title: 'Facebook Sign-In',
+                  hint: 'Paste Facebook accessToken',
+                  onSubmit: ctrl.loginWithFacebookToken,
+                ),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: BorderSide(color: Colors.grey[300]!),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                icon: const Icon(Iconsax.facebook, color: Colors.blue),
+                label: const Text(
+                  'Facebook',
+                  style: TextStyle(color: Colors.black87),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _promptToken(
+    BuildContext context, {
+    required String title,
+    required String hint,
+    required void Function(String token) onSubmit,
+  }) async {
+    final controller = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: hint,
+            border: const OutlineInputBorder(),
+          ),
+          minLines: 1,
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              onSubmit(controller.text);
+            },
+            child: const Text('Continue'),
+          ),
+        ],
       ),
     );
   }
