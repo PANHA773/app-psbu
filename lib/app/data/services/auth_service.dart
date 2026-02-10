@@ -46,13 +46,8 @@ class AuthService {
 
       final response = await DioClient.dio.post('/auth/register', data: data);
 
-      // ✅ Save token after successful registration
-      final tokenValue = response.data['token'];
-      if (tokenValue != null) {
-        await saveToken(tokenValue);
-      } else {
-        print('⚠️ No token returned from registration');
-      }
+      // Intentionally do not save token on register.
+      // Users must log in before accessing protected routes.
 
       return response;
     } catch (e) {

@@ -7,7 +7,7 @@ class AuthMiddleware extends GetMiddleware {
   @override
   RouteSettings? redirect(String? route) {
     if (AuthService.token == null) {
-      return const RouteSettings(name: Routes.REGISTER);
+      return const RouteSettings(name: Routes.LOGIN);
     }
     return null;
   }

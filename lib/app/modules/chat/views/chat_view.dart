@@ -28,7 +28,7 @@ class _ChatViewState extends State<ChatView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     friendController.fetchAll();
   }
 
@@ -760,7 +760,8 @@ class _ChatViewState extends State<ChatView>
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: () {
-            Get.toNamed('/friend-profile');
+            controller.setSelectedUser(_toChatSender(user));
+            Get.toNamed('/conversation');
           },
           borderRadius: BorderRadius.circular(16),
           splashColor: Colors.purple.withOpacity(0.1),
@@ -845,6 +846,18 @@ class _ChatViewState extends State<ChatView>
       return CircleAvatar(child: Text(initials));
     }
     return CircleAvatar(backgroundImage: NetworkImage(user.avatar!));
+  }
+
+  ChatSender _toChatSender(FriendUser user) {
+    return ChatSender(
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: 'user',
+      avatar: user.avatar,
+      bio: user.bio,
+      gender: null,
+    );
   }
 
   Widget _buildFloatingActionButton() {
