@@ -71,7 +71,7 @@ class HomeView extends GetView<HomeController> {
               Expanded(child: _buildNavItem(Iconsax.add_circle, 'Post', 2)),
               Expanded(child: _buildNavItem(Iconsax.shop, 'Goods', 3)),
               Expanded(child: _buildNavItem(Iconsax.document, 'My Posts', 4)),
-              Expanded(child: _buildNavItem(Iconsax.profile_circle, 'Profile', 5)),
+              // Expanded(child: _buildNavItem(Iconsax.profile_circle, 'Profile', 5)),
             ],
           ),
         ),
@@ -500,13 +500,24 @@ class HomeView extends GetView<HomeController> {
       snap: false,
       elevation: 0,
       backgroundColor: Colors.transparent,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 20, top: 16),
+
+    // ================= PROFILE LEFT =================
+    leading: Padding(
+      padding: const EdgeInsets.only(left: 20, top: 16),
+      child: GestureDetector(
+        onTap: () => Get.toNamed('/profile'),
         child: CircleAvatar(
-          backgroundColor: Colors.white.withOpacity(0.2),
           radius: 20,
+          backgroundColor: Colors.white.withOpacity(0.2),
+          child: const Icon(
+            Icons.person,
+            color: Colors.white,
+            size: 22,
+          ),
         ),
       ),
+    ),
+      
       actions: [
         Padding(
           padding: const EdgeInsets.only(top: 16, right: 10),
@@ -525,6 +536,7 @@ class HomeView extends GetView<HomeController> {
             ),
           ),
         ),
+        
         Padding(
           padding: const EdgeInsets.only(top: 16, right: 10),
           child: CircleAvatar(

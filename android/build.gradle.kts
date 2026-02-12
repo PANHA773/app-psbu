@@ -1,5 +1,5 @@
-import org.gradle.api.tasks.Delete
 import org.gradle.api.file.Directory
+import org.gradle.api.tasks.Delete
 
 buildscript {
     val kotlinVersion = "1.9.22"
@@ -10,7 +10,8 @@ buildscript {
     }
 
     dependencies {
-        classpath("com.android.tools.build:gradle:8.1.0")
+        // ✅ Use stable AGP (lint-safe)
+        classpath("com.android.tools.build:gradle:8.0.2")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
     }
 }
@@ -28,17 +29,20 @@ val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")
         .get()
+
 rootProject.layout.buildDirectory.set(newBuildDir)
 
 subprojects {
-    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
-    project.layout.buildDirectory.set(newSubprojectBuildDir)
+    project.layout.buildDirectory.set(newBuildDir.dir(project.name))
 }
 
-// Make sure app is evaluated before subprojects
+// Ensure app is evaluated first
 subprojects {
     project.evaluationDependsOn(":app")
 }
+
+// ❌ REMOVE Kotlin toolchain forcing for plugins
+// (AGP already configures this safely)
 
 // ===================== Clean task =====================
 tasks.register<Delete>("clean") {

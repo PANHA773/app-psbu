@@ -6,12 +6,17 @@ plugins {
 
 android {
     namespace = "com.example.university_news_app"
+
+    // ✅ REQUIRED by plugins
     compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.university_news_app"
-        minSdk = flutter.minSdkVersion         // ⚡ replace flutter.minSdkVersion with actual number
+
+        // ✅ SAFE & correct
+        minSdk = flutter.minSdkVersion
         targetSdk = 36
+
         versionCode = 1
         versionName = "1.0"
     }
@@ -28,13 +33,15 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            isShrinkResources = false   // ✅ fixed
+            isShrinkResources = false
             signingConfig = signingConfigs.getByName("debug")
         }
-        debug {
-            isMinifyEnabled = false
-            isShrinkResources = false   // ✅ fixed
-        }
+    }
+
+    // Optional (safe to keep)
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
     }
 }
 

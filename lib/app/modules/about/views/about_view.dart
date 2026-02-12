@@ -197,7 +197,7 @@ class AboutView extends StatelessWidget {
                     const SizedBox(height: 24),
                     const Center(
                       child: Text(
-                        'មេត្តា សតិ បញ្ញា',
+                        '',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
