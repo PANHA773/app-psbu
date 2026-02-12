@@ -369,6 +369,85 @@ class NewsDetailView extends GetView<NewsDetailController> {
                         const SizedBox(height: 40),
                       ],
 
+                      // Comments Section
+                      const SizedBox(height: 8),
+                      Text(
+                        'Comments',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Obx(() {
+                        final comments = controller.comments;
+                        if (comments.isEmpty) {
+                          return const Text('No comments yet.', style: TextStyle(color: Colors.grey));
+                        }
+                        return ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: comments.length,
+                          separatorBuilder: (context, i) => const Divider(height: 16),
+                          itemBuilder: (context, i) {
+                            final c = comments[i];
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: Colors.grey[200],
+                                  child: Icon(Icons.person, size: 16, color: Colors.grey[600]),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(c.authorName ?? 'User', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                      const SizedBox(height: 2),
+                                      Text(c.content, style: const TextStyle(fontSize: 14)),
+                                      const SizedBox(height: 2),
+                                      Text(c.createdAtFormatted ?? '', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      }),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: controller.commentController,
+                              decoration: InputDecoration(
+                                hintText: 'Write a comment...',
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: controller.addComment,
+                            style: ElevatedButton.styleFrom(
+                              shape: const CircleBorder(),
+                              padding: const EdgeInsets.all(12),
+                              backgroundColor: AppColors.primary,
+                            ),
+                            child: const Icon(Icons.send, color: Colors.white, size: 20),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 40),
+
                       // Related Articles Header
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,

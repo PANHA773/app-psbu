@@ -6,6 +6,14 @@ import '../../goods/controllers/goods_controller.dart';
 import '../../../data/models/news_model.dart';
 import '../../../data/services/post_service.dart';
 
+class NewsCommentModel {
+  final String id;
+  final String? authorName;
+  final String content;
+  final String? createdAtFormatted;
+  NewsCommentModel({required this.id, this.authorName, required this.content, this.createdAtFormatted});
+}
+
 class NewsDetailController extends GetxController {
   /// Current news
   final news = Rxn<NewsModel>();
@@ -18,6 +26,10 @@ class NewsDetailController extends GetxController {
   final relatedNews = <NewsModel>[].obs;
   final isLoadingRelated = false.obs;
 
+  // Comments
+  final comments = <NewsCommentModel>[].obs;
+  final commentController = TextEditingController();
+
   @override
   void onInit() {
     super.onInit();
@@ -26,6 +38,7 @@ class NewsDetailController extends GetxController {
     if (arg is NewsModel) {
       _setNews(arg);
       fetchRelatedPosts();
+      fetchComments();
     }
   }
 
@@ -75,6 +88,27 @@ class NewsDetailController extends GetxController {
     } finally {
       isLoadingRelated.value = false;
     }
+  }
+
+  // ===================== Comments =====================
+  void fetchComments() {
+    // TODO: Replace with backend call
+    comments.assignAll([
+      NewsCommentModel(id: '1', authorName: 'Alice', content: 'Great article!', createdAtFormatted: '12/2/2026'),
+      NewsCommentModel(id: '2', authorName: 'Bob', content: 'Thanks for sharing.', createdAtFormatted: '12/2/2026'),
+    ]);
+  }
+
+  void addComment() {
+    final text = commentController.text.trim();
+    if (text.isEmpty) return;
+    comments.add(NewsCommentModel(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      authorName: 'Me',
+      content: text,
+      createdAtFormatted: 'Now',
+    ));
+    commentController.clear();
   }
 
   // ===================== Actions =====================

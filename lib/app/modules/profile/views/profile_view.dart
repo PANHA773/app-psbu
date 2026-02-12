@@ -43,7 +43,7 @@ class ProfileView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 🔹 Avatar + Name
+              // 🔹 Avatar + Name df
               Center(
                 child: Column(
                   children: [

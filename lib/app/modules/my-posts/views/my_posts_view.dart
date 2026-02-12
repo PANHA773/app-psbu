@@ -41,21 +41,22 @@ class MyPostsView extends GetView<MyPostsController> {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
-      leading: IconButton(
-        onPressed: () => Get.back(),
-        icon: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(
-            Icons.arrow_back_ios_rounded,
-            size: 20,
-            color: Colors.black87,
-          ),
-        ),
-      ),
+     leading: IconButton(
+  onPressed: () => Get.offAllNamed('/home'),
+  icon: Container(
+    padding: const EdgeInsets.all(8),
+    decoration: BoxDecoration(
+      color: Colors.grey[100],
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: const Icon(
+      Icons.arrow_back_ios_rounded,
+      size: 20,
+      color: Colors.black87,
+    ),
+  ),
+),
+
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

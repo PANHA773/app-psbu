@@ -4,6 +4,31 @@ import '../../../data/services/chat_service.dart';
 import '../../../data/services/auth_service.dart';
 
 class ChatController extends GetxController {
+    Future<void> editMessage(String messageId, String newContent) async {
+      try {
+        await _chatService.editMessage(messageId, newContent);
+        final userId = selectedUser.value?.id;
+        if (userId != null) {
+          fetchConversationMessages(userId);
+        }
+      } catch (e) {
+        print('❌ Edit Message Error: $e');
+        Get.snackbar('Error', 'Failed to edit message');
+      }
+    }
+
+    Future<void> deleteMessage(String messageId) async {
+      try {
+        await _chatService.deleteMessage(messageId);
+        final userId = selectedUser.value?.id;
+        if (userId != null) {
+          fetchConversationMessages(userId);
+        }
+      } catch (e) {
+        print('❌ Delete Message Error: $e');
+        Get.snackbar('Error', 'Failed to delete message');
+      }
+    }
   final ChatService _chatService = ChatService();
   final RxList<ChatSender> conversations = <ChatSender>[].obs;
   final RxList<ChatMessageModel> conversationMessages =

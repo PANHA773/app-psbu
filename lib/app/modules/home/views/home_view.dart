@@ -4,6 +4,8 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:university_news_app/app/modules/profile/views/profile_view.dart';
+import 'package:university_news_app/app/modules/auth/controllers/auth_controller.dart';
+import 'package:university_news_app/app/config.dart';
 
 import '../../../../core/app_colors.dart';
 import '../../../data/models/news_model.dart';
@@ -499,35 +501,51 @@ class HomeView extends GetView<HomeController> {
       pinned: true,
       snap: false,
       elevation: 0,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
 
-    // ================= PROFILE LEFT =================
-    leading: Padding(
-      padding: const EdgeInsets.only(left: 20, top: 16),
-      child: GestureDetector(
-        onTap: () => Get.toNamed('/profile'),
-        child: CircleAvatar(
-          radius: 20,
-          backgroundColor: Colors.white.withOpacity(0.2),
-          child: const Icon(
-            Icons.person,
-            color: Colors.white,
-            size: 22,
-          ),
-        ),
-      ),
-    ),
       
       actions: [
+         Padding(
+         padding: const EdgeInsets.only(top: 16, right: 10),
+        child: GestureDetector(
+          onTap: () => Get.toNamed('/profile'),
+          child: Obx(() {
+            final user = Get.find<AuthController>().user.value;
+            if (user != null && user.avatar != null && user.avatar!.isNotEmpty) {
+              String avatarUrl = user.avatar!;
+              if (avatarUrl.startsWith('http')) {
+                avatarUrl = AppConfig.transformUrl(avatarUrl);
+              } else {
+                avatarUrl = '${AppConfig.imageUrl}/$avatarUrl';
+              }
+              return CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.grey[200],
+                backgroundImage: NetworkImage(avatarUrl),
+              );
+            } else {
+              return CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.grey[200],
+                child: const Icon(
+                  Icons.person,
+                  color: Colors.black54,
+                  size: 22,
+                ),
+              );
+            }
+          }),
+        ),
+      ),
         Padding(
           padding: const EdgeInsets.only(top: 16, right: 10),
           child: CircleAvatar(
-            backgroundColor: Colors.white.withOpacity(0.2),
+            backgroundColor: Colors.grey[200],
             radius: 20,
             child: IconButton(
               icon: const Icon(
                 Iconsax.notification,
-                color: Colors.white,
+                color: Colors.black87,
                 size: 22,
               ),
               onPressed: () {
@@ -536,14 +554,13 @@ class HomeView extends GetView<HomeController> {
             ),
           ),
         ),
-        
         Padding(
           padding: const EdgeInsets.only(top: 16, right: 10),
           child: CircleAvatar(
-            backgroundColor: Colors.white.withOpacity(0.2),
+            backgroundColor: Colors.grey[200],
             radius: 20,
             child: IconButton(
-              icon: const Icon(Iconsax.message, color: Colors.white, size: 22),
+              icon: const Icon(Iconsax.message, color: Colors.black87, size: 22),
               onPressed: () {
                 Get.toNamed('/chat');
               },
@@ -553,12 +570,12 @@ class HomeView extends GetView<HomeController> {
         Padding(
           padding: const EdgeInsets.only(top: 16, right: 20),
           child: CircleAvatar(
-            backgroundColor: Colors.white.withOpacity(0.2),
+            backgroundColor: Colors.grey[200],
             radius: 20,
             child: IconButton(
               icon: const Icon(
                 Iconsax.info_circle,
-                color: Colors.white,
+                color: Colors.black87,
                 size: 22,
               ),
               onPressed: () {
@@ -570,54 +587,44 @@ class HomeView extends GetView<HomeController> {
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.primary,
-                AppColors.primary.withOpacity(0.9),
-                AppColors.primary.withOpacity(0.8),
-              ],
-            ),
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(30),
-              bottomRight: Radius.circular(30),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 50, 24, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: Text(
-                    _getGreeting(),
-                    key: ValueKey(_getGreeting()),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.5,
+          padding: const EdgeInsets.fromLTRB(24, 50, 24, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'News',
+                    style: TextStyle(
+                      color: Color.fromARGB(221, 243, 18, 18),
+                      fontSize: 25,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'PSBU News',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
+                  
+                ],
+              ),
+              const SizedBox(height: 12),
+              _buildStoriesRow(),
+              const SizedBox(height: 12),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: Text(
+                  _getGreeting(),
+                  key: ValueKey(_getGreeting()),
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.5,
                   ),
                 ),
-                const SizedBox(height: 12),
-                _buildStoriesRow(),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -646,27 +653,44 @@ class HomeView extends GetView<HomeController> {
                 GestureDetector(
                   onTap: () => Get.toNamed('/story-view', arguments: story),
                   child: Container(
-                    padding: const EdgeInsets.all(2),
+                    padding: const EdgeInsets.all(2), // reduced from 3 to 2
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.pinkAccent,
+                          Colors.orangeAccent,
+                          Colors.yellowAccent,
+                          Colors.greenAccent,
+                          Colors.blueAccent,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                     ),
-                    child: CircleAvatar(
-                      radius: 24,
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                      backgroundImage:
-                          user.avatar == null || user.avatar!.isEmpty
-                              ? null
-                              : CachedNetworkImageProvider(user.avatar!),
-                      child: user.avatar == null || user.avatar!.isEmpty
-                          ? Text(
-                              initials,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            )
-                          : null,
+                    child: Container(
+                      padding: const EdgeInsets.all(1), // reduced from 2 to 1
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: CircleAvatar(
+                        radius: 23, // reduced from 24 to 23
+                        backgroundColor: Colors.white.withOpacity(0.2),
+                        backgroundImage:
+                            user.avatar == null || user.avatar!.isEmpty
+                                ? null
+                                : CachedNetworkImageProvider(user.avatar!),
+                        child: user.avatar == null || user.avatar!.isEmpty
+                            ? Text(
+                                initials,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              )
+                            : null,
+                      ),
                     ),
                   ),
                 ),
@@ -676,7 +700,7 @@ class HomeView extends GetView<HomeController> {
                   child: Text(
                     user.name.isEmpty ? 'Unknown' : user.name,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Colors.black87,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -693,12 +717,12 @@ class HomeView extends GetView<HomeController> {
     });
   }
 
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning! ☀️';
-    if (hour < 17) return 'Good Afternoon! 🌤️';
-    return 'Good Evening! 🌙';
-  }
+    String _getGreeting() {
+      final hour = DateTime.now().hour;
+      if (hour < 12) return 'Good Morning! ☀️';
+      if (hour < 17) return 'Good Afternoon! 🌤️';
+      return 'Good Evening! 🌙';
+    }
 
   
 }

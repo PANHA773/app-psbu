@@ -3,6 +3,26 @@ import '../models/chat_message_model.dart';
 import 'dio_client.dart';
 
 class ChatService {
+    Future<void> editMessage(String messageId, String newContent) async {
+      try {
+        await _dio.patch(
+          '/chat/message/$messageId',
+          data: {'content': newContent},
+        );
+      } catch (e) {
+        print('❌ ChatService Edit Error: $e');
+        rethrow;
+      }
+    }
+
+    Future<void> deleteMessage(String messageId) async {
+      try {
+        await _dio.delete('/chat/message/$messageId');
+      } catch (e) {
+        print('❌ ChatService Delete Error: $e');
+        rethrow;
+      }
+    }
   final Dio _dio = DioClient.dio;
 
   ChatService() {
