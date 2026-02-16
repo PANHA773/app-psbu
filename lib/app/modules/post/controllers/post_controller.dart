@@ -65,21 +65,7 @@ class PostController extends GetxController {
         return;
       }
 
-      final role = currentUser['role'];
-      final permissions = currentUser['permissions'] ?? [];
-
-      final isAdmin = role == 'admin';
-      final isUser = role == 'user';
-      final hasManageNews =
-          permissions is List && permissions.contains('manage_news');
-
-      if (!isAdmin && !isUser && !hasManageNews) {
-        Get.snackbar(
-          'Permission denied',
-          'You are not allowed to create posts.',
-        );
-        return;
-      }
+      // Everyone who is logged in can now post
     } catch (e) {
       print('⚠️ Auth error: $e');
       Get.snackbar('Error', 'Failed to verify user');
@@ -110,10 +96,7 @@ class PostController extends GetxController {
       );
 
       Get.back();
-      Get.snackbar(
-        'Success',
-        'Post submitted successfully!',
-      );
+      Get.snackbar('Success', 'Post submitted successfully!');
     } catch (e) {
       print('❌ Create post failed: $e');
 

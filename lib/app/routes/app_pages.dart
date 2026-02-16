@@ -154,12 +154,5 @@ class AppPages {
       page: () => const StoryView(),
       middlewares: [AuthMiddleware()],
     ),
-     GetPage(
-      name: _Paths.SPLASH,
-      page: () => const SplashView(),
-      binding: SplashBinding(),
-      middlewares: [AuthMiddleware()],
-    ),
-    
   ];
 }

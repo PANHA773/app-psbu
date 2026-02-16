@@ -1,38 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:university_news_app/app/config.dart';
 
 import '../../goods/controllers/goods_controller.dart';
 import '../../../data/models/news_model.dart';
+import '../../../data/models/comment_model.dart';
 import '../../../data/services/post_service.dart';
-
-class NewsCommentModel {
-  final String id;
-  final String? authorName;
-  final String content;
-  final String? createdAtFormatted;
-  NewsCommentModel({required this.id, this.authorName, required this.content, this.createdAtFormatted});
-}
+import '../../../data/services/comment_service.dart';
+import '../../../data/services/dio_client.dart';
+import '../../../data/services/auth_service.dart';
 
 class NewsDetailController extends GetxController {
   /// Current news
   final news = Rxn<NewsModel>();
 
   /// UI states
-  final isLiked = false.obs;
-  final isGood = false.obs;
-  final likeCount = 0.obs;
+  final RxBool isLiked = false.obs;
+  final RxBool isGood = false.obs;
+  final RxInt likeCount = 0.obs;
 
   final relatedNews = <NewsModel>[].obs;
   final isLoadingRelated = false.obs;
+  final isLoadingComments = false.obs;
+  final RxString currentUserId = ''.obs;
 
   // Comments
-  final comments = <NewsCommentModel>[].obs;
+  final comments = <CommentModel>[].obs;
   final commentController = TextEditingController();
 
   @override
   void onInit() {
     super.onInit();
+
+    _loadCurrentUser();
 
     final arg = Get.arguments;
     if (arg is NewsModel) {
@@ -42,11 +43,23 @@ class NewsDetailController extends GetxController {
     }
   }
 
+  Future<void> _loadCurrentUser() async {
+    try {
+      final user = await AuthService.getCurrentUser();
+      if (user != null && user['_id'] != null) {
+        currentUserId.value = user['_id'].toString();
+      }
+    } catch (_) {
+      // ignore; user not logged in or fetch failed
+    }
+  }
+
   // ===================== Helpers =====================
   void _setNews(NewsModel data) {
     news.value = data;
-    isGood.value = data.isBookmarked ?? false;
-    likeCount.value = data.likes ?? 0;
+    isGood.value = data.isBookmarked;
+    isLiked.value = data.isLiked;
+    likeCount.value = data.likes;
   }
 
   // ===================== Fetch =====================
@@ -55,6 +68,7 @@ class NewsDetailController extends GetxController {
       final data = await PostService.getPostById(newsId);
       _setNews(data);
       fetchRelatedPosts();
+      fetchComments();
     } catch (_) {
       Get.snackbar(
         'Error',
@@ -91,24 +105,111 @@ class NewsDetailController extends GetxController {
   }
 
   // ===================== Comments =====================
-  void fetchComments() {
-    // TODO: Replace with backend call
-    comments.assignAll([
-      NewsCommentModel(id: '1', authorName: 'Alice', content: 'Great article!', createdAtFormatted: '12/2/2026'),
-      NewsCommentModel(id: '2', authorName: 'Bob', content: 'Thanks for sharing.', createdAtFormatted: '12/2/2026'),
-    ]);
+  Future<void> fetchComments() async {
+    final currentNews = news.value;
+    if (currentNews == null) return;
+
+    try {
+      isLoadingComments.value = true;
+      final data = await CommentService.fetchComments(currentNews.id);
+      comments.assignAll(data);
+    } catch (e) {
+      debugPrint('⚠️ Fetch comments error: $e');
+    } finally {
+      isLoadingComments.value = false;
+    }
   }
 
-  void addComment() {
+  Future<void> addComment() async {
+    final currentNews = news.value;
+    if (currentNews == null) return;
+
     final text = commentController.text.trim();
     if (text.isEmpty) return;
-    comments.add(NewsCommentModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      authorName: 'Me',
-      content: text,
-      createdAtFormatted: 'Now',
-    ));
-    commentController.clear();
+
+    try {
+      final newComment = await CommentService.createComment(
+        currentNews.id,
+        text,
+      );
+
+      // 👤 If the server returns "Unknown" (e.g. not populated), fix it locally
+      var finalComment = newComment;
+      if (newComment.authorName == 'Unknown') {
+        final user = await AuthService.getCurrentUser();
+        if (user != null) {
+          finalComment = CommentModel(
+            id: newComment.id,
+            content: newComment.content,
+            authorName: user['name'] ?? user['fullName'] ?? 'Me',
+            authorId: user['_id']?.toString(),
+            authorAvatar: AppConfig.transformUrl(
+              newComment.authorAvatar ?? user['avatar'],
+            ),
+            createdAt: newComment.createdAt ?? DateTime.now(),
+          );
+        }
+      }
+
+      comments.insert(0, finalComment); // Add to top of the list
+      commentController.clear();
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        e.toString().replaceFirst('Exception:', '').trim(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  Future<void> editComment({
+    required String commentId,
+    required String content,
+  }) async {
+    final currentNews = news.value;
+    if (currentNews == null || content.trim().isEmpty) return;
+
+    try {
+      final updated = await CommentService.editComment(
+        currentNews.id,
+        commentId,
+        content.trim(),
+      );
+
+      final index = comments.indexWhere((c) => c.id == commentId);
+      if (index != -1) {
+        comments[index] = updated;
+        comments.refresh();
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        e.toString().replaceFirst('Exception:', '').trim(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  Future<void> deleteComment(String commentId) async {
+    final currentNews = news.value;
+    if (currentNews == null) return;
+
+    try {
+      await CommentService.deleteComment(currentNews.id, commentId);
+      comments.removeWhere((c) => c.id == commentId);
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        e.toString().replaceFirst('Exception:', '').trim(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+    }
   }
 
   // ===================== Actions =====================
@@ -116,10 +217,29 @@ class NewsDetailController extends GetxController {
     _setNews(updatedNews);
   }
 
-  void toggleLike() {
-    isLiked.toggle();
-    likeCount.value += isLiked.value ? 1 : -1;
-    if (likeCount.value < 0) likeCount.value = 0;
+  Future<void> toggleLike() async {
+    final currentNews = news.value;
+    if (currentNews == null) return;
+
+    try {
+      // Optimistic update
+      isLiked.toggle();
+      likeCount.value += isLiked.value ? 1 : -1;
+      if (likeCount.value < 0) likeCount.value = 0;
+
+      await DioClient.dio.post('/news/${currentNews.id}/like');
+    } catch (e) {
+      // Revert on error
+      isLiked.toggle();
+      likeCount.value += isLiked.value ? 1 : -1;
+      if (likeCount.value < 0) likeCount.value = 0;
+
+      Get.snackbar(
+        'Error',
+        'Failed to update like status.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 
   Future<void> toggleGood() async {
@@ -143,10 +263,7 @@ class NewsDetailController extends GetxController {
         duration: const Duration(seconds: 2),
       );
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        e.toString().replaceFirst('Exception:', '').trim(),
-      );
+      Get.snackbar('Error', e.toString().replaceFirst('Exception:', '').trim());
     }
   }
 

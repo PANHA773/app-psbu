@@ -46,7 +46,7 @@ class ConversationView extends GetView<ChatController> {
                 itemBuilder: (context, index) {
                   final message = messages[index];
                   final bool isMe = message.sender.id == currentUserId;
-                  return _buildChatBubble(message, isMe);
+                  return _buildChatBubble(context, message, isMe);
                 },
               );
             }),
@@ -80,11 +80,27 @@ class ConversationView extends GetView<ChatController> {
                 CircleAvatar(
                   radius: 20,
                   backgroundColor: AppColors.primary.withOpacity(0.1),
-                  backgroundImage: user?.avatar != null
-                      ? CachedNetworkImageProvider(user!.avatar!)
-                      : const CachedNetworkImageProvider(
-                          'https://ui-avatars.com/api/?name=User&background=random',
-                        ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: CachedNetworkImage(
+                      imageUrl:
+                          user?.avatar ??
+                          'https://ui-avatars.com/api/?name=${user?.name ?? 'User'}&background=random',
+                      fit: BoxFit.cover,
+                      width: 40,
+                      height: 40,
+                      placeholder: (context, url) => const Icon(
+                        Icons.person,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                      errorWidget: (context, url, error) => const Icon(
+                        Icons.person,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ),
+                  ),
                 ),
                 Positioned(
                   bottom: 0,
@@ -152,86 +168,203 @@ class ConversationView extends GetView<ChatController> {
     );
   }
 
-  Widget _buildChatBubble(ChatMessageModel message, bool isMe) {
+  Widget _buildChatBubble(
+    BuildContext context,
+    ChatMessageModel message,
+    bool isMe,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        mainAxisAlignment: isMe
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isMe) ...[
-            CircleAvatar(
-              radius: 16,
-              backgroundImage: message.sender.avatar != null
-                  ? CachedNetworkImageProvider(message.sender.avatar!)
-                  : null,
-              child: message.sender.avatar == null
-                  ? const Icon(Icons.person, size: 16)
-                  : null,
-            ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Column(
-              crossAxisAlignment: isMe
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+      child: GestureDetector(
+        onLongPress: isMe ? () => _showPopupMenu(context, message) : null,
+        child: Row(
+          mainAxisAlignment: isMe
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (!isMe) ...[
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.grey[200],
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: CachedNetworkImage(
+                    imageUrl: message.sender.avatar ?? '',
+                    fit: BoxFit.cover,
+                    width: 32,
+                    height: 32,
+                    placeholder: (context, url) =>
+                        const Icon(Icons.person, size: 16, color: Colors.grey),
+                    errorWidget: (context, url, error) =>
+                        const Icon(Icons.person, size: 16, color: Colors.grey),
                   ),
-                  decoration: BoxDecoration(
-                    gradient: isMe
-                        ? LinearGradient(
-                            colors: [
-                              AppColors.primary,
-                              AppColors.primary.withOpacity(0.8),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                        : LinearGradient(
-                            colors: [Colors.grey[100]!, Colors.grey[200]!],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(20),
-                      topRight: const Radius.circular(20),
-                      bottomLeft: Radius.circular(isMe ? 20 : 0),
-                      bottomRight: Radius.circular(isMe ? 0 : 20),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Flexible(
+              child: Column(
+                crossAxisAlignment: isMe
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (isMe ? AppColors.primary : Colors.grey)
-                            .withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                    decoration: BoxDecoration(
+                      gradient: isMe
+                          ? LinearGradient(
+                              colors: [
+                                AppColors.primary,
+                                AppColors.primary.withOpacity(0.8),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : LinearGradient(
+                              colors: [Colors.grey[100]!, Colors.grey[200]!],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(20),
+                        topRight: const Radius.circular(20),
+                        bottomLeft: Radius.circular(isMe ? 20 : 0),
+                        bottomRight: Radius.circular(isMe ? 0 : 20),
                       ),
-                    ],
-                  ),
-                  child: Text(
-                    message.content,
-                    style: TextStyle(
-                      color: isMe ? Colors.white : Colors.black87,
-                      fontSize: 15,
-                      height: 1.4,
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isMe ? AppColors.primary : Colors.grey)
+                              .withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          message.content,
+                          style: TextStyle(
+                            color: isMe ? Colors.white : Colors.black87,
+                            fontSize: 15,
+                            height: 1.4,
+                          ),
+                        ),
+                        if (message.isEdited) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            '(edited)',
+                            style: TextStyle(
+                              color: isMe ? Colors.white70 : Colors.grey[600],
+                              fontSize: 10,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${message.createdAt.hour}:${message.createdAt.minute.toString().padLeft(2, '0')}',
-                  style: TextStyle(color: Colors.grey[400], fontSize: 10),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    '${message.createdAt.hour}:${message.createdAt.minute.toString().padLeft(2, '0')}',
+                    style: TextStyle(color: Colors.grey[400], fontSize: 10),
+                  ),
+                ],
+              ),
             ),
+            if (isMe) const SizedBox(width: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPopupMenu(BuildContext context, ChatMessageModel message) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
           ),
-          if (isMe) const SizedBox(width: 8),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Iconsax.edit, color: Colors.blue),
+              title: const Text('Edit Message'),
+              onTap: () {
+                Get.back();
+                _showEditDialog(message);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Iconsax.trash, color: Colors.red),
+              title: const Text('Delete Message'),
+              onTap: () {
+                Get.back();
+                _showDeleteConfirmation(message);
+              },
+            ),
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditDialog(ChatMessageModel message) {
+    final TextEditingController editController = TextEditingController(
+      text: message.content,
+    );
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Edit Message'),
+        content: TextField(
+          controller: editController,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Update your message...'),
+          maxLines: null,
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (editController.text.trim().isNotEmpty) {
+                controller.editMessage(message.id, editController.text.trim());
+                Get.back();
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(ChatMessageModel message) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Delete Message'),
+        content: const Text('Are you sure you want to delete this message?'),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              controller.deleteMessage(message.id);
+              Get.back();
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
         ],
       ),
     );

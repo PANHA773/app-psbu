@@ -5,27 +5,19 @@ class StoryUser {
   final String name;
   final String? avatar;
 
-  StoryUser({
-    required this.id,
-    required this.name,
-    this.avatar,
-  });
+  StoryUser({required this.id, required this.name, this.avatar});
 
   factory StoryUser.fromJson(Map<String, dynamic> json) {
     return StoryUser(
       id: json['_id']?.toString() ?? '',
-      name: json['name'] ?? '',
+      name: json['name'] ?? json['fullName'] ?? '',
       avatar: _parseAvatarUrl(json['avatar']),
     );
   }
 
   static String? _parseAvatarUrl(dynamic value) {
     if (value == null || value.toString().isEmpty) return null;
-    String url = value.toString();
-    if (url.startsWith('http')) {
-      return AppConfig.transformUrl(url);
-    }
-    return '${AppConfig.imageUrl}/$url';
+    return AppConfig.transformUrl(value.toString());
   }
 }
 
@@ -59,11 +51,7 @@ class StoryModel {
 
   static String _parseImageUrl(dynamic value) {
     if (value == null || value.toString().isEmpty) return '';
-    String url = value.toString();
-    if (url.startsWith('http')) {
-      return AppConfig.transformUrl(url);
-    }
-    return '${AppConfig.imageUrl}/$url';
+    return AppConfig.transformUrl(value.toString());
   }
 
   static DateTime? _parseDate(dynamic value) {

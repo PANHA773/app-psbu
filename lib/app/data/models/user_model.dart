@@ -1,3 +1,5 @@
+import '../../config.dart';
+
 class UserModel {
   final String id;
   final String name;
@@ -50,12 +52,12 @@ class UserModel {
 
     return UserModel(
       id: id,
-      name: json['name'] ?? '',
+      name: json['name'] ?? json['fullName'] ?? '',
       email: json['email'] ?? '',
       role: json['role'] ?? 'user',
       createdAt: createdAt,
       updatedAt: updatedAt,
-      avatar: json['avatar'],
+      avatar: AppConfig.transformUrl(json['avatar']),
       bio: json['bio'],
       gender: json['gender'],
       settings: settings,

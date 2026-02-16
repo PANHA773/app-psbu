@@ -60,12 +60,15 @@ class StoryView extends StatelessWidget {
                       CircleAvatar(
                         radius: 18,
                         backgroundColor: Colors.white24,
-                        backgroundImage: user?.avatar == null ||
-                                user!.avatar!.isEmpty
-                            ? null
-                            : CachedNetworkImageProvider(user.avatar!),
-                        child: user?.avatar == null || user!.avatar!.isEmpty
-                            ? Text(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: CachedNetworkImage(
+                            imageUrl: user?.avatar ?? '',
+                            fit: BoxFit.cover,
+                            width: 36,
+                            height: 36,
+                            placeholder: (context, url) => Center(
+                              child: Text(
                                 user?.name.isNotEmpty == true
                                     ? user!.name[0]
                                     : '?',
@@ -73,8 +76,21 @@ class StoryView extends StatelessWidget {
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
                                 ),
-                              )
-                            : null,
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Center(
+                              child: Text(
+                                user?.name.isNotEmpty == true
+                                    ? user!.name[0]
+                                    : '?',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -119,25 +135,41 @@ class _StoryImage extends StatelessWidget {
   const _StoryImage({required this.url});
 
   Future<_ImageResult> _loadImageBytes() async {
-    final token = await AuthService.getToken();
-    final dio = Dio();
-    final response = await dio.get<List<int>>(
-      url,
-      options: Options(
-        responseType: ResponseType.bytes,
-        headers: token == null ? null : {'Authorization': 'Bearer $token'},
-        validateStatus: (status) => status != null && status < 500,
-      ),
-    );
-    final bytes = Uint8List.fromList(response.data ?? []);
-    return _ImageResult(bytes: bytes, statusCode: response.statusCode);
+    try {
+      final token = await AuthService.getToken();
+      final dio = Dio();
+      final response = await dio.get<List<int>>(
+        url,
+        options: Options(
+          responseType: ResponseType.bytes,
+          headers: token == null ? null : {'Authorization': 'Bearer $token'},
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+
+      final contentType = response.headers.value('content-type');
+      final isImage = contentType?.startsWith('image/') ?? false;
+
+      if (!isImage && response.statusCode == 200) {
+        return _ImageResult(
+          bytes: Uint8List(0),
+          statusCode: 200,
+          error: 'Not an image ($contentType)',
+        );
+      }
+
+      final bytes = Uint8List.fromList(response.data ?? []);
+      return _ImageResult(bytes: bytes, statusCode: response.statusCode);
+    } catch (e) {
+      return _ImageResult(bytes: Uint8List(0), error: e.toString());
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     if (url.isEmpty) {
       return const Center(
-        child: Icon(Icons.broken_image, color: Colors.white),
+        child: Icon(Icons.broken_image, color: Colors.white, size: 48),
       );
     }
     return FutureBuilder<_ImageResult>(
@@ -148,25 +180,51 @@ class _StoryImage extends StatelessWidget {
             child: CircularProgressIndicator(color: Colors.white),
           );
         }
+
         final result = snapshot.data;
-        if (result == null || result.bytes.isEmpty) {
-          return const Center(
-            child: Icon(Icons.broken_image, color: Colors.white),
+        if (result == null || result.error != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.broken_image, color: Colors.white54, size: 48),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    result?.error ?? 'Unexpected error loading image',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
           );
         }
+
         if (result.statusCode != null && result.statusCode != 200) {
           return Center(
             child: Text(
-              'Failed to load image (HTTP ${result.statusCode})',
+              'Failed to load (HTTP ${result.statusCode})',
               style: const TextStyle(color: Colors.white),
             ),
           );
         }
+
+        if (result.bytes.isEmpty) {
+          return const Center(
+            child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
+          );
+        }
+
         return Image.memory(
           result.bytes,
           fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,
+          errorBuilder: (context, error, stackTrace) => const Center(
+            child: Icon(Icons.broken_image, color: Colors.white, size: 48),
+          ),
         );
       },
     );
@@ -176,5 +234,6 @@ class _StoryImage extends StatelessWidget {
 class _ImageResult {
   final Uint8List bytes;
   final int? statusCode;
-  _ImageResult({required this.bytes, this.statusCode});
+  final String? error;
+  _ImageResult({required this.bytes, this.statusCode, this.error});
 }

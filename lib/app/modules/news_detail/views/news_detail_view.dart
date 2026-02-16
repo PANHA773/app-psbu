@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../data/models/news_model.dart';
+import '../../../data/models/comment_model.dart';
 import '../../../../core/app_colors.dart';
 import '../controllers/news_detail_controller.dart';
 
@@ -69,12 +70,13 @@ class NewsDetailView extends GetView<NewsDetailController> {
                       () => IconButton(
                         icon: Icon(
                           controller.isGood.value
-                              ? Iconsax
-                                    .shop // Filled icon for saved state
-                              : Iconsax
-                                    .shop, // Outline icon for non-saved state
-                          color: Colors.white,
-                          size: 22,
+                              ? Icons
+                                    .bookmark_added // Using standard Icons for clarity
+                              : Icons.bookmark_add_outlined,
+                          color: controller.isGood.value
+                              ? Colors.orange
+                              : Colors.white,
+                          size: 24,
                         ),
                         onPressed: () => controller.toggleGood(),
                       ),
@@ -370,81 +372,285 @@ class NewsDetailView extends GetView<NewsDetailController> {
                       ],
 
                       // Comments Section
-                      const SizedBox(height: 8),
-                      Text(
-                        'Comments',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Obx(() {
-                        final comments = controller.comments;
-                        if (comments.isEmpty) {
-                          return const Text('No comments yet.', style: TextStyle(color: Colors.grey));
-                        }
-                        return ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: comments.length,
-                          separatorBuilder: (context, i) => const Divider(height: 16),
-                          itemBuilder: (context, i) {
-                            final c = comments[i];
-                            return Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CircleAvatar(
-                                  radius: 16,
-                                  backgroundColor: Colors.grey[200],
-                                  child: Icon(Icons.person, size: 16, color: Colors.grey[600]),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(c.authorName ?? 'User', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                      const SizedBox(height: 2),
-                                      Text(c.content, style: const TextStyle(fontSize: 14)),
-                                      const SizedBox(height: 2),
-                                      Text(c.createdAtFormatted ?? '', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      }),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 40),
                       Row(
                         children: [
-                          Expanded(
-                            child: TextField(
-                              controller: controller.commentController,
-                              decoration: InputDecoration(
-                                hintText: 'Write a comment...',
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                  borderSide: BorderSide(color: Colors.grey[300]!),
+                          Container(
+                            width: 6,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(3),
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Comments',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Obx(
+                            () => Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '${controller.comments.length}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary,
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: controller.addComment,
-                            style: ElevatedButton.styleFrom(
-                              shape: const CircleBorder(),
-                              padding: const EdgeInsets.all(12),
-                              backgroundColor: AppColors.primary,
-                            ),
-                            child: const Icon(Icons.send, color: Colors.white, size: 20),
-                          ),
                         ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      Obx(() {
+                        if (controller.isLoadingComments.value &&
+                            controller.comments.isEmpty) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(20),
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          );
+                        }
+
+                        if (controller.comments.isEmpty) {
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(32),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.grey[200]!),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Iconsax.message_text,
+                                  size: 40,
+                                  color: Colors.grey[300],
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'No comments yet.',
+                                  style: TextStyle(
+                                    color: Colors.grey[500],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Be the first to share your thoughts!',
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        return ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: controller.comments.length,
+                          separatorBuilder: (context, i) =>
+                              const SizedBox(height: 20),
+                          itemBuilder: (context, i) {
+                            final c = controller.comments[i];
+                            final isMine = c.authorId != null &&
+                                c.authorId == controller.currentUserId.value;
+                            return GestureDetector(
+                              onLongPress:
+                                  isMine ? () => _showCommentActions(c) : null,
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Colors.grey[100]!),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.02),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: CachedNetworkImage(
+                                        imageUrl: c.authorAvatar ?? '',
+                                        fit: BoxFit.cover,
+                                        width: 40,
+                                        height: 40,
+                                        placeholder: (context, url) => Icon(
+                                          Iconsax.user,
+                                          size: 20,
+                                          color: AppColors.primary,
+                                        ),
+                                        errorWidget: (context, url, error) =>
+                                            Icon(
+                                              Iconsax.user,
+                                              size: 20,
+                                              color: AppColors.primary,
+                                            ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                c.authorName,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 14,
+                                                  color: Colors.black87,
+                                                ),
+                                              ),
+                                              Text(
+                                                c.createdAtFormatted,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.grey[400],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            c.content,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              height: 1.5,
+                                              color: Colors.grey[700],
+                                            ),
+                                          ),
+                                          if (isMine) ...[
+                                            const SizedBox(height: 8),
+                                            Row(
+                                              children: [
+                                                _commentActionChip(
+                                                  icon: Iconsax.edit,
+                                                  label: 'Edit',
+                                                  onTap: () =>
+                                                      _showEditCommentDialog(c),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                _commentActionChip(
+                                                  icon: Iconsax.trash,
+                                                  label: 'Delete',
+                                                  color: Colors.red,
+                                                  onTap: () => _confirmDelete(c),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      }),
+                      const SizedBox(height: 32),
+
+                      // Comment Input
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.08),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: AppColors.primary.withOpacity(0.1),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: controller.commentController,
+                                style: const TextStyle(fontSize: 14),
+                                decoration: InputDecoration(
+                                  hintText: 'Share your thoughts...',
+                                  hintStyle: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 14,
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  border: InputBorder.none,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: controller.addComment,
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.primary,
+                                      AppColors.primary.withOpacity(0.8),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primary.withOpacity(0.3),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Iconsax.send_1,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 40),
 
@@ -529,49 +735,63 @@ class NewsDetailView extends GetView<NewsDetailController> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Row(
             children: [
-              // Back to Home
-              Expanded(
-                child: OutlinedButton.icon(
+              // Back Button
+              SizedBox(
+                width: 90,
+                child: OutlinedButton(
                   onPressed: () => Get.back(),
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    side: BorderSide(color: Colors.grey[300]!),
+                    side: BorderSide(color: Colors.grey[200]!),
                   ),
-                  icon: Icon(
-                    Iconsax.arrow_left,
-                    size: 18,
-                    color: Colors.grey[600],
-                  ),
-                  label: Text(
-                    'Back',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Iconsax.arrow_left,
+                        size: 16,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Back',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+
+              const Spacer(),
 
               // Action Buttons
-              Obx(
-                () => Row(
+              Obx(() {
+                // Extremely defensive null checks
+                final newsVal = controller.news.value;
+                final liked = controller.isLiked.value;
+                final count = controller.likeCount.value;
+
+                if (newsVal == null) return const SizedBox.shrink();
+
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     // Like Button
                     _buildActionButton(
-                      icon: controller.isLiked.value
-                          ? Iconsax.heart
-                          : Iconsax.heart,
-                      label: '${controller.likeCount.value}',
-                      isActive: controller.isLiked.value,
+                      icon: liked ? Icons.favorite : Icons.favorite_border,
+                      label: '$count',
+                      isActive: liked,
                       activeColor: Colors.red,
                       onPressed: () => controller.toggleLike(),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
 
                     // Share Button
                     _buildActionButton(
@@ -580,8 +800,8 @@ class NewsDetailView extends GetView<NewsDetailController> {
                       onPressed: () => controller.shareNews(),
                     ),
                   ],
-                ),
-              ),
+                );
+              }),
             ],
           ),
         ),
@@ -803,6 +1023,7 @@ class NewsDetailView extends GetView<NewsDetailController> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   icon,
@@ -822,6 +1043,136 @@ class NewsDetailView extends GetView<NewsDetailController> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showCommentActions(CommentModel comment) {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Iconsax.edit, color: AppColors.primary),
+              title: const Text('Edit comment'),
+              onTap: () {
+                Get.back();
+                _showEditCommentDialog(comment);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Iconsax.trash, color: Colors.red),
+              title: const Text('Delete comment'),
+              onTap: () {
+                Get.back();
+                _confirmDelete(comment);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _commentActionChip({
+    required IconData icon,
+    required String label,
+    Color color = AppColors.primary,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditCommentDialog(CommentModel comment) {
+    final controller = Get.find<NewsDetailController>();
+    final textController = TextEditingController(text: comment.content);
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Edit comment'),
+        content: TextField(
+          controller: textController,
+          maxLines: null,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Update your comment...',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: Get.back, child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              final newText = textController.text.trim();
+              if (newText.isNotEmpty) {
+                controller.editComment(
+                  commentId: comment.id,
+                  content: newText,
+                );
+                Get.back();
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDelete(CommentModel comment) {
+    final controller = Get.find<NewsDetailController>();
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Delete comment'),
+        content:
+            const Text('Are you sure you want to delete this comment?'),
+        actions: [
+          TextButton(onPressed: Get.back, child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              controller.deleteComment(comment.id);
+              Get.back();
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
       ),
     );
   }

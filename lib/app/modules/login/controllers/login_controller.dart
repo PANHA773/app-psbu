@@ -10,10 +10,18 @@ class LoginController extends GetxController {
   final passwordController = TextEditingController();
 
   var isLoading = false.obs;
+  var selectedRole = 'Student'.obs; // Default role
+
+  final List<String> roles = ['Student', 'Teacher'];
+
+  void setRole(String role) {
+    selectedRole.value = role;
+  }
 
   Future<void> _handleLoginResponse(dio.Response response) async {
     if (response.statusCode == 200 && response.data['token'] != null) {
       await AuthService.saveToken(response.data['token']);
+      await AuthService.saveRole(selectedRole.value);
 
       // Update AuthController state
       try {
@@ -33,6 +41,7 @@ class LoginController extends GetxController {
         final response = await AuthService.login(
           emailController.text,
           passwordController.text,
+          role: selectedRole.value,
         );
 
         await _handleLoginResponse(response);
@@ -60,6 +69,26 @@ class LoginController extends GetxController {
     }
   }
 
+  void loginAsGuest() async {
+    try {
+      isLoading(true);
+      await AuthService.loginAsGuest();
+
+      // Navigate to home without token
+      Get.offAllNamed('/home');
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Guest login failed: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading(false);
+    }
+  }
+
   void loginWithGoogleToken(String idToken) async {
     if (idToken.trim().isEmpty) {
       Get.snackbar(
@@ -77,7 +106,8 @@ class LoginController extends GetxController {
       await _handleLoginResponse(response);
     } on dio.DioException catch (e) {
       final errorMsg =
-          e.response?.data?['message'] ?? 'Google login failed. Please try again.';
+          e.response?.data?['message'] ??
+          'Google login failed. Please try again.';
       Get.snackbar(
         'Error',
         errorMsg,
@@ -115,7 +145,8 @@ class LoginController extends GetxController {
       await _handleLoginResponse(response);
     } on dio.DioException catch (e) {
       final errorMsg =
-          e.response?.data?['message'] ?? 'Facebook login failed. Please try again.';
+          e.response?.data?['message'] ??
+          'Facebook login failed. Please try again.';
       Get.snackbar(
         'Error',
         errorMsg,

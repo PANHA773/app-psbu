@@ -14,8 +14,10 @@ class AuthController extends GetxController {
   }
 
   Future<void> checkLogin() async {
-    final token = await AuthService.getToken();
-    if (token != null) {
+    // Ensure the token is refreshed from SharedPreferences
+    await AuthService.init();
+
+    if (AuthService.token != null) {
       isLoggedIn.value = true;
       await fetchUser();
     } else {

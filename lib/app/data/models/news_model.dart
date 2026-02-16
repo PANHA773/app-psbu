@@ -14,6 +14,8 @@ class NewsModel {
   final DateTime? createdAt;
 
   final bool isBookmarked;
+  final int likes;
+  final bool isLiked;
 
   NewsModel({
     required this.id,
@@ -28,6 +30,8 @@ class NewsModel {
     required this.views,
     this.createdAt,
     this.isBookmarked = false,
+    this.likes = 0,
+    this.isLiked = false,
   });
 
   factory NewsModel.fromJson(Map<String, dynamic> json) {
@@ -43,11 +47,17 @@ class NewsModel {
       categoryName: json['category'] is Map
           ? (json['category']['name'] ?? 'Unknown')
           : (json['category']?.toString() ?? 'Unknown'),
-      authorName: json['author'] is Map
-          ? (json['author']['name'] ?? 'Unknown')
+
+      authorName: (json['author'] is Map)
+          ? (json['author']['name'] ?? json['author']['fullName'] ?? 'Unknown')
+          : (json['user'] is Map)
+          ? (json['user']['name'] ?? json['user']['fullName'] ?? 'Unknown')
           : 'Unknown',
-      authorAvatar: json['author'] is Map
+
+      authorAvatar: (json['author'] is Map)
           ? _parseMediaUrl(json['author']['avatar'])
+          : (json['user'] is Map)
+          ? _parseMediaUrl(json['user']['avatar'])
           : null,
 
       documents: json['documents'] is List
@@ -60,6 +70,12 @@ class NewsModel {
           ? json['views']
           : int.tryParse(json['views']?.toString() ?? '0') ?? 0,
 
+      likes: json['likesCount'] is int
+          ? json['likesCount']
+          : (json['likes'] is List ? (json['likes'] as List).length : 0),
+
+      isLiked: json['isLiked'] ?? false,
+
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'])
           : null,
@@ -71,34 +87,7 @@ class NewsModel {
 
   static String? _parseMediaUrl(dynamic value) {
     if (value == null || value.toString().isEmpty) return null;
-
-    String url = value.toString();
-    String originalUrl = url; // Store original for debugging
-
-    // Handle full URLs from backend that contain localhost
-    if (url.startsWith('http://localhost:')) {
-      // Extract just the path part (e.g., "uploads/media-123.mp4")
-      final uri = Uri.parse(url);
-      url = uri.path.substring(1); // Remove leading slash
-      print('🔧 Stripped localhost URL: $originalUrl → $url');
-    }
-
-    // If the URL contains localhost (but not at start), replace it
-    if (url.contains('localhost')) {
-      url = url.replaceAll('localhost', AppConfig.host);
-      print('📝 Replaced localhost: $originalUrl → $url');
-    }
-
-    // If the URL is already a full URL (after localhost handling), return it
-    if (url.startsWith('http')) {
-      print('✅ Full URL detected: $url');
-      return url;
-    }
-
-    // Otherwise, prepend the base URL
-    final fullUrl = '${AppConfig.baseUrl}/$url';
-    print('🔗 Constructed URL: $url → $fullUrl');
-    return fullUrl;
+    return AppConfig.transformUrl(value.toString());
   }
 
   // ================= GETTERS =================
@@ -109,8 +98,6 @@ class NewsModel {
   }
 
   get category => null;
-
-  get likes => null;
 }
 
 class NewsDocument {

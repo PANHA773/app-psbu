@@ -69,7 +69,9 @@ class HomeView extends GetView<HomeController> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(child: _buildNavItem(Iconsax.home_2, 'Home', 0)),
-              Expanded(child: _buildNavItem(Iconsax.category_2, 'Categories', 1)),
+              Expanded(
+                child: _buildNavItem(Iconsax.category_2, 'Categories', 1),
+              ),
               Expanded(child: _buildNavItem(Iconsax.add_circle, 'Post', 2)),
               Expanded(child: _buildNavItem(Iconsax.shop, 'Goods', 3)),
               Expanded(child: _buildNavItem(Iconsax.document, 'My Posts', 4)),
@@ -383,6 +385,11 @@ class HomeView extends GetView<HomeController> {
                                   news.authorAvatar!,
                                 ),
                                 fit: BoxFit.cover,
+                                onError: (exception, stackTrace) {
+                                  debugPrint(
+                                    '❌ Slider avatar error: $exception',
+                                  );
+                                },
                               ),
                               border: Border.all(
                                 color: Colors.white,
@@ -503,40 +510,48 @@ class HomeView extends GetView<HomeController> {
       elevation: 0,
       backgroundColor: Colors.white,
 
-      
       actions: [
-         Padding(
-         padding: const EdgeInsets.only(top: 16, right: 10),
-        child: GestureDetector(
-          onTap: () => Get.toNamed('/profile'),
-          child: Obx(() {
-            final user = Get.find<AuthController>().user.value;
-            if (user != null && user.avatar != null && user.avatar!.isNotEmpty) {
-              String avatarUrl = user.avatar!;
-              if (avatarUrl.startsWith('http')) {
-                avatarUrl = AppConfig.transformUrl(avatarUrl);
+        Padding(
+          padding: const EdgeInsets.only(top: 16, right: 10),
+          child: GestureDetector(
+            onTap: () => Get.toNamed('/profile'),
+            child: Obx(() {
+              final user = Get.find<AuthController>().user.value;
+              if (user != null &&
+                  user.avatar != null &&
+                  user.avatar!.isNotEmpty) {
+                String avatarUrl = user.avatar!;
+                if (avatarUrl.startsWith('http')) {
+                  avatarUrl = AppConfig.transformUrl(avatarUrl);
+                } else {
+                  avatarUrl = '${AppConfig.imageUrl}/$avatarUrl';
+                }
+                return CircleAvatar(
+                  radius: 20,
+                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  backgroundImage: NetworkImage(avatarUrl),
+                  onBackgroundImageError: (e, s) =>
+                      debugPrint('❌ AppBar avatar error: $e'),
+                  // child: const Icon(
+                  //   Icons.person,
+                  //   color: AppColors.primary,
+                  //   size: 22,
+                  // ),
+                );
               } else {
-                avatarUrl = '${AppConfig.imageUrl}/$avatarUrl';
+                return CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Colors.grey[200],
+                  child: const Icon(
+                    Icons.person,
+                    color: Colors.black54,
+                    size: 22,
+                  ),
+                );
               }
-              return CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.grey[200],
-                backgroundImage: NetworkImage(avatarUrl),
-              );
-            } else {
-              return CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.grey[200],
-                child: const Icon(
-                  Icons.person,
-                  color: Colors.black54,
-                  size: 22,
-                ),
-              );
-            }
-          }),
+            }),
+          ),
         ),
-      ),
         Padding(
           padding: const EdgeInsets.only(top: 16, right: 10),
           child: CircleAvatar(
@@ -560,7 +575,11 @@ class HomeView extends GetView<HomeController> {
             backgroundColor: Colors.grey[200],
             radius: 20,
             child: IconButton(
-              icon: const Icon(Iconsax.message, color: Colors.black87, size: 22),
+              icon: const Icon(
+                Iconsax.message,
+                color: Colors.black87,
+                size: 22,
+              ),
               onPressed: () {
                 Get.toNamed('/chat');
               },
@@ -595,17 +614,23 @@ class HomeView extends GetView<HomeController> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    'News',
-                    style: TextStyle(
-                      color: Color.fromARGB(221, 243, 18, 18),
-                      fontSize: 25,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.5,
+                children: [
+                  ShaderMask(
+                    shaderCallback: (bounds) => LinearGradient(
+                      colors: [AppColors.primary, Colors.orange, Colors.red],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ).createShader(bounds),
+                    child: const Text(
+                      'News App',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -1,
+                      ),
                     ),
                   ),
-                  
                 ],
               ),
               const SizedBox(height: 12),
@@ -641,10 +666,53 @@ class HomeView extends GetView<HomeController> {
         height: 78,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          itemCount: stories.length,
+          itemCount: stories.length + 1, // Add 1 for the 'Add Story' button
           separatorBuilder: (_, __) => const SizedBox(width: 12),
           itemBuilder: (context, index) {
-            final story = stories[index];
+            if (index == 0) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () => storyController.pickAndPostStory(),
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.primary,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(1),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: CircleAvatar(
+                          radius: 23,
+                          backgroundColor: AppColors.primary.withOpacity(0.1),
+                          child: const Icon(
+                            Iconsax.add,
+                            color: AppColors.primary,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Add Story',
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            final story = stories[index - 1];
             final user = story.user;
             final initials = user.name.isNotEmpty ? user.name[0] : '?';
             return Column(
@@ -676,20 +744,30 @@ class HomeView extends GetView<HomeController> {
                       ),
                       child: CircleAvatar(
                         radius: 23, // reduced from 24 to 23
-                        backgroundColor: Colors.white.withOpacity(0.2),
-                        backgroundImage:
-                            user.avatar == null || user.avatar!.isEmpty
-                                ? null
-                                : CachedNetworkImageProvider(user.avatar!),
-                        child: user.avatar == null || user.avatar!.isEmpty
-                            ? Text(
-                                initials,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              )
-                            : null,
+                        backgroundColor: AppColors.primary.withOpacity(0.1),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(23),
+                          child: CachedNetworkImage(
+                            imageUrl: user.avatar ?? '',
+                            fit: BoxFit.cover,
+                            width: 46,
+                            height: 46,
+                            placeholder: (context, url) => Text(
+                              initials,
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Text(
+                              initials,
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -717,14 +795,12 @@ class HomeView extends GetView<HomeController> {
     });
   }
 
-    String _getGreeting() {
-      final hour = DateTime.now().hour;
-      if (hour < 12) return 'Good Morning! ☀️';
-      if (hour < 17) return 'Good Afternoon! 🌤️';
-      return 'Good Evening! 🌙';
-    }
-
-  
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning! ☀️';
+    if (hour < 17) return 'Good Afternoon! 🌤️';
+    return 'Good Evening! 🌙';
+  }
 }
 
 // ===================== MODERN NEWS CARD =====================
@@ -888,6 +964,8 @@ class _ModernNewsCardState extends State<ModernNewsCard> {
                                 widget.news.authorAvatar!,
                               ),
                               fit: BoxFit.cover,
+                              onError: (e, s) =>
+                                  debugPrint('❌ NewsCard avatar error: $e'),
                             ),
                             border: Border.all(color: Colors.white, width: 2),
                           ),

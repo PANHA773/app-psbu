@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../data/models/news_model.dart';
 import '../../../data/services/post_service.dart';
+import '../../../data/services/auth_service.dart';
 
 class GoodsController extends GetxController {
   var goodsList = <NewsModel>[].obs;
@@ -18,10 +19,19 @@ class GoodsController extends GetxController {
   Future<void> fetchGoods() async {
     try {
       isLoading(true);
+
+      // 🛡️ Skip fetching if user is a Guest
+      if (AuthService.token == 'guest') {
+        goodsList.clear();
+        return;
+      }
+
       final data = await PostService.fetchBookmarkedPosts();
       goodsList.assignAll(data);
     } catch (e) {
       String errorMessage = e.toString().replaceAll("Exception: ", "");
+
+      // Don't show error if it's just a 401/guest restriction (though we check token above)
       Get.snackbar(
         'Error Loading Goods',
         errorMessage,
@@ -47,8 +57,11 @@ class GoodsController extends GetxController {
       return goodsList;
     }
     return goodsList
-        .where((g) =>
-            g.categoryName.toLowerCase() == selectedCategory.value.toLowerCase())
+        .where(
+          (g) =>
+              g.categoryName.toLowerCase() ==
+              selectedCategory.value.toLowerCase(),
+        )
         .toList();
   }
 

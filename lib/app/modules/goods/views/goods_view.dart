@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../controllers/goods_controller.dart';
+import '../../../data/services/auth_service.dart';
 
 class GoodsView extends GetView<GoodsController> {
   const GoodsView({super.key});
@@ -584,6 +585,8 @@ class _EmptyGoodsState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isGuest = AuthService.token == 'guest';
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -592,15 +595,19 @@ class _EmptyGoodsState extends StatelessWidget {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
+              color: (isGuest ? Colors.blue : Colors.orange).withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Iconsax.shop, size: 60, color: Colors.orange),
+            child: Icon(
+              isGuest ? Iconsax.login : Iconsax.shop,
+              size: 60,
+              color: isGuest ? Colors.blue : Colors.orange,
+            ),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'No Goods Yet',
-            style: TextStyle(
+          Text(
+            isGuest ? 'Login Required' : 'No Goods Yet',
+            style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
               color: Colors.black87,
@@ -610,8 +617,10 @@ class _EmptyGoodsState extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
-              'Save articles, videos, and links that you want to revisit later. '
-              'They will appear here for easy access.',
+              isGuest
+                  ? 'Please login to save and view your bookmarked articles, videos, and links.'
+                  : 'Save articles, videos, and links that you want to revisit later. '
+                        'They will appear here for easy access.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -623,10 +632,14 @@ class _EmptyGoodsState extends StatelessWidget {
           const SizedBox(height: 32),
           ElevatedButton.icon(
             onPressed: () {
-              Get.back(); // Go back to browse
+              if (isGuest) {
+                Get.offAllNamed('/login');
+              } else {
+                Get.back(); // Go back to browse
+              }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
+              backgroundColor: isGuest ? Colors.blue : Colors.orange,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               shape: RoundedRectangleBorder(
@@ -634,10 +647,10 @@ class _EmptyGoodsState extends StatelessWidget {
               ),
               elevation: 0,
             ),
-            icon: const Icon(Iconsax.discover),
-            label: const Text(
-              'Browse Content',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            icon: Icon(isGuest ? Iconsax.login : Iconsax.discover),
+            label: Text(
+              isGuest ? 'Login Now' : 'Browse Content',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
         ],

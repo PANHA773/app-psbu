@@ -42,25 +42,7 @@ class ChatMessageModel {
 
   static String? _parseMediaUrl(dynamic value) {
     if (value == null || value.toString().isEmpty) return null;
-
-    String url = value.toString();
-
-    // Handle full URLs from backend that contain localhost
-    if (url.startsWith('http://localhost:')) {
-      final uri = Uri.parse(url);
-      url = uri.path.substring(1); // Remove leading slash
-    }
-
-    // Replace localhost with dynamic host (e.g., 10.0.2.2 for Android)
-    if (url.contains('localhost')) {
-      url = url.replaceAll('localhost', AppConfig.host);
-    }
-
-    if (url.startsWith('http')) {
-      return url;
-    }
-
-    return '${AppConfig.baseUrl}/$url';
+    return AppConfig.transformUrl(value.toString());
   }
 }
 
@@ -86,7 +68,7 @@ class ChatSender {
   factory ChatSender.fromJson(Map<String, dynamic> json) {
     return ChatSender(
       id: json['_id']?.toString() ?? '',
-      name: json['name'] ?? 'Unknown',
+      name: json['name'] ?? json['fullName'] ?? 'Unknown',
       email: json['email'] ?? '',
       role: json['role'] ?? 'user',
       avatar: ChatMessageModel._parseMediaUrl(json['avatar']),

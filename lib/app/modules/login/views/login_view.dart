@@ -13,30 +13,69 @@ class LoginView extends GetView<LoginController> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Center(
+      body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
           child: Form(
             key: ctrl.formKey,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Image.asset('assets/images/logo.png', width: 100, height: 100),
-                const SizedBox(height: 20),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      width: 60,
+                      height: 60,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
                 const Text(
-                  'Welcome Back!',
+                  'Sign In',
                   style: TextStyle(
                     fontSize: 32,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.secondary,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Welcome back! Choose your role to continue.',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[500],
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                const Text(
+                  'Login as',
+                  style: TextStyle(
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: AppColors.secondary,
+                    letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  'Sign in to continue',
-                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 40),
+                _buildRoleRadioList(ctrl),
+
+                const SizedBox(height: 32),
                 _buildTextFormField(
                   controller: ctrl.emailController,
                   hintText: 'Email Address',
@@ -62,7 +101,24 @@ class LoginView extends GetView<LoginController> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 40),
+
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {},
+                    child: Text(
+                      'Forgot Password?',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
                 Obx(
                   () => SizedBox(
                     width: double.infinity,
@@ -72,7 +128,9 @@ class LoginView extends GetView<LoginController> {
                           : () => ctrl.login(),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -87,19 +145,18 @@ class LoginView extends GetView<LoginController> {
                               ),
                             )
                           : const Text(
-                              'Login',
+                              'Sign In',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
                               ),
                             ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 _buildSocialSection(context, ctrl),
-                const SizedBox(height: 20),
+                const SizedBox(height: 32),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -110,7 +167,7 @@ class LoginView extends GetView<LoginController> {
                     TextButton(
                       onPressed: () => Get.toNamed('/register'),
                       child: const Text(
-                        'Register',
+                        'Register Now',
                         style: TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,
@@ -119,9 +176,107 @@ class LoginView extends GetView<LoginController> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                Center(child: _buildGuestLink(ctrl)),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRoleRadioList(LoginController ctrl) {
+    return Obx(
+      () => Column(
+        children: ctrl.roles.map((role) {
+          bool isSelected = ctrl.selectedRole.value == role;
+          return GestureDetector(
+            onTap: () => ctrl.setRole(role),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary.withOpacity(0.05)
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isSelected ? AppColors.primary : Colors.grey[200]!,
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.primary : Colors.grey[100],
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      role == 'Student' ? Iconsax.user : Iconsax.teacher,
+                      size: 18,
+                      color: isSelected ? Colors.white : Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    role,
+                    style: TextStyle(
+                      color: isSelected
+                          ? AppColors.primary
+                          : AppColors.secondary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.primary
+                            : Colors.grey[300]!,
+                        width: 2,
+                      ),
+                    ),
+                    child: isSelected
+                        ? Center(
+                            child: Container(
+                              width: 12,
+                              height: 12,
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          )
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildGuestLink(LoginController ctrl) {
+    return TextButton(
+      onPressed: ctrl.isLoading.value ? null : () => ctrl.loginAsGuest(),
+      child: Text(
+        'Continue as Guest',
+        style: TextStyle(
+          color: Colors.grey[500],
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          decoration: TextDecoration.underline,
         ),
       ),
     );

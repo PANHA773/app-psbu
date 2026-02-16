@@ -7,8 +7,9 @@ class DioClient {
   static final Dio _dio = Dio(
     BaseOptions(
       baseUrl: AppConfig.apiUrl, // <-- now correct for emulator/device
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+      sendTimeout: const Duration(seconds: 30),
       headers: {'Accept': 'application/json'},
     ),
   )..interceptors.add(AuthInterceptor());

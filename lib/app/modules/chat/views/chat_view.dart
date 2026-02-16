@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../../core/app_colors.dart';
 import '../controllers/chat_controller.dart';
 import '../../../data/models/chat_message_model.dart';
 import '../../../data/models/friend_request_model.dart';
@@ -57,11 +58,7 @@ class _ChatViewState extends State<ChatView>
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: [
-                _buildChatsTab(),
-             
-                _buildFriendsTab(),
-              ],
+              children: [_buildChatsTab(), _buildFriendsTab()],
             ),
           ),
         ],
@@ -396,14 +393,30 @@ class _ChatViewState extends State<ChatView>
                     Container(
                       width: 56,
                       height: 56,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        image: DecorationImage(
-                          image: NetworkImage(
-                            user.avatar ??
-                                'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=500&auto=format&fit=crop',
-                          ),
+                      decoration: BoxDecoration(shape: BoxShape.circle),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(28),
+                        child: CachedNetworkImage(
+                          imageUrl: user.avatar ?? '',
                           fit: BoxFit.cover,
+                          width: 56,
+                          height: 56,
+                          placeholder: (context, url) => Container(
+                            color: AppColors.primary.withOpacity(0.1),
+                            child: const Icon(
+                              Icons.person,
+                              color: AppColors.primary,
+                              size: 28,
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: AppColors.primary.withOpacity(0.1),
+                            child: const Icon(
+                              Icons.person,
+                              color: AppColors.primary,
+                              size: 28,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -793,10 +806,7 @@ class _ChatViewState extends State<ChatView>
                       const SizedBox(height: 2),
                       Text(
                         user.email,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),

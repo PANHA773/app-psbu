@@ -18,7 +18,7 @@ class FriendUser {
   factory FriendUser.fromJson(Map<String, dynamic> json) {
     return FriendUser(
       id: json['_id']?.toString() ?? '',
-      name: json['name'] ?? '',
+      name: json['name'] ?? json['fullName'] ?? '',
       email: json['email'] ?? '',
       avatar: _parseAvatarUrl(json['avatar']),
       bio: json['bio'],
@@ -27,10 +27,6 @@ class FriendUser {
 
   static String? _parseAvatarUrl(dynamic value) {
     if (value == null || value.toString().isEmpty) return null;
-    String url = value.toString();
-    if (url.startsWith('http')) {
-      return AppConfig.transformUrl(url);
-    }
-    return '${AppConfig.imageUrl}/$url';
+    return AppConfig.transformUrl(value.toString());
   }
 }
