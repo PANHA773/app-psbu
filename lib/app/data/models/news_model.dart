@@ -6,6 +6,7 @@ class NewsModel {
   final String content;
   final String? image;
   final String? video;
+  final String? categoryId;
   final String categoryName;
   final String authorName;
   final String? authorAvatar;
@@ -23,6 +24,7 @@ class NewsModel {
     required this.content,
     this.image,
     this.video,
+    this.categoryId,
     required this.categoryName,
     required this.authorName,
     this.authorAvatar,
@@ -43,6 +45,10 @@ class NewsModel {
       // ✅ IMAGE FIX (absolute URL)
       image: _parseMediaUrl(json['image']),
       video: _parseMediaUrl(json['video']),
+
+      categoryId: json['category'] is Map
+          ? json['category']['_id']?.toString()
+          : json['category']?.toString(),
 
       categoryName: json['category'] is Map
           ? (json['category']['name'] ?? 'Unknown')
@@ -97,7 +103,7 @@ class NewsModel {
     return '${createdAt!.day}/${createdAt!.month}/${createdAt!.year}';
   }
 
-  get category => null;
+  String? get category => categoryId;
 }
 
 class NewsDocument {

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'dart:io';
+import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../../core/app_colors.dart';
 import '../../../config.dart';
-
+import '../../../controllers/theme_controller.dart';
+import '../../../data/models/user_model.dart';
+import '../../../routes/app_pages.dart';
 import '../../auth/controllers/auth_controller.dart';
-import '../../splash/controllers/splash_controller.dart';
 import '../controllers/profile_controller.dart';
 
 class ProfileView extends StatelessWidget {
@@ -13,155 +14,130 @@ class ProfileView extends StatelessWidget {
 
   final AuthController _authController = Get.find<AuthController>();
   final ProfileController _profileController = Get.find<ProfileController>();
+  final ThemeController _themeController = ThemeController.to;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        backgroundColor: AppColors.primary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit, color: Colors.white),
-            onPressed: () =>
-                _showEditProfileDialog(context, _authController.user.value!),
-          ),
-        ],
-      ),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: _buildAppBar(context),
       body: Obx(() {
         final user = _authController.user.value;
         if (user == null) {
-          return const Center(
-            child: Text('No user data available. Please login first.'),
-          );
+          return _buildNoUserState();
         }
 
+        final avatarUrl = _resolveAvatarUrl(user.avatar);
+
         return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.all(20),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 🔹 Avatar + Name df
-              Center(
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: theme.colorScheme.primary.withOpacity(
-                        0.2,
-                      ),
-                      backgroundImage:
-                          (user.avatar != null && user.avatar!.isNotEmpty)
-                          ? NetworkImage(
-                              user.avatar!.startsWith('http')
-                                  ? AppConfig.transformUrl(user.avatar!)
-                                  : '${AppConfig.imageUrl}/${user.avatar}',
-                            )
-                          : null,
-                      child: (user.avatar == null || user.avatar!.isEmpty)
-                          ? Text(
-                              user.name.isNotEmpty ? user.name[0] : '?',
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      user.name,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      user.role.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: theme.colorScheme.onBackground.withOpacity(0.6),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              // 🔹 Account Info
-              _buildCard(
+              _buildHeroCard(context, user, avatarUrl),
+              const SizedBox(height: 16),
+              _buildStatsRow(context, user),
+              const SizedBox(height: 16),
+              _buildSectionCard(
+                context,
                 title: 'Account Information',
+                icon: Iconsax.profile_circle,
                 children: [
-                  _buildInfoRow('Email', user.email),
-                  _buildInfoRow('Role', user.role),
-                  if (user.gender != null && user.gender!.isNotEmpty)
-                    _buildInfoRow('Gender', user.gender!),
-                  if (user.bio != null && user.bio!.isNotEmpty)
-                    _buildInfoRow('Bio', user.bio!),
-                  _buildInfoRow('Language', user.settings.language),
+                  _buildInfoTile(
+                    context,
+                    icon: Iconsax.sms,
+                    title: 'Email',
+                    value: user.email,
+                  ),
+                  _buildInfoTile(
+                    context,
+                    icon: Iconsax.user_tag,
+                    title: 'Role',
+                    value: user.role.toUpperCase(),
+                  ),
+                  _buildInfoTile(
+                    context,
+                    icon: Iconsax.global,
+                    title: 'Language',
+                    value: user.settings.language,
+                  ),
+                  if ((user.gender ?? '').trim().isNotEmpty)
+                    _buildInfoTile(
+                      context,
+                      icon: Iconsax.user,
+                      title: 'Gender',
+                      value: user.gender!.trim(),
+                    ),
+                  if ((user.bio ?? '').trim().isNotEmpty)
+                    _buildInfoTile(
+                      context,
+                      icon: Iconsax.note,
+                      title: 'Bio',
+                      value: user.bio!.trim(),
+                    ),
                 ],
               ),
-              const SizedBox(height: 20),
-
-              // 🔹 Preferences
-              _buildCard(
+              const SizedBox(height: 16),
+              _buildSectionCard(
+                context,
                 title: 'Preferences',
+                icon: Iconsax.setting,
                 children: [
-                  _buildSwitchRow('Dark Mode', user.settings.darkMode, (val) {
-                    print('DarkMode toggled: $val');
-                  }),
-                  _buildSwitchRow(
-                    'Email Notifications',
-                    user.settings.emailNotifications,
-                    (val) {
-                      print('Email Notifications: $val');
-                    },
-                  ),
-                  _buildSwitchRow(
-                    'Push Notifications',
-                    user.settings.pushNotifications,
-                    (val) {
-                      print('Push Notifications: $val');
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // 🔹 Logout Button
-              _buildCard(
-                title: 'Account Actions',
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _showLogoutDialog(context),
-                      icon: const Icon(Icons.logout, color: Colors.white),
-                      label: const Text(
-                        'Logout',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 2,
-                      ),
+                  Obx(
+                    () => _buildToggleTile(
+                      context,
+                      icon: Iconsax.moon,
+                      title: 'Dark Mode',
+                      subtitle: 'Enable night-friendly interface',
+                      value: _themeController.isDarkMode,
+                      onChanged: _themeController.setDarkMode,
                     ),
                   ),
+                  _buildToggleTile(
+                    context,
+                    icon: Iconsax.sms_notification,
+                    title: 'Email Notifications',
+                    subtitle: 'Manage email alerts',
+                    value: user.settings.emailNotifications,
+                    onChanged: (_) =>
+                        _showComingSoon('Email notifications settings'),
+                  ),
+                  _buildToggleTile(
+                    context,
+                    icon: Iconsax.notification,
+                    title: 'Push Notifications',
+                    subtitle: 'Manage push alerts',
+                    value: user.settings.pushNotifications,
+                    onChanged: (_) => _showComingSoon('Push settings'),
+                  ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+              _buildSectionCard(
+                context,
+                title: 'Account Actions',
+                icon: Iconsax.shield_tick,
+                children: [
+                  _buildActionTile(
+                    context,
+                    icon: Iconsax.edit,
+                    title: 'Edit Profile',
+                    subtitle: 'Update name and avatar',
+                    onTap: () => _showEditProfileDialog(context, user),
+                  ),
+                  _buildActionTile(
+                    context,
+                    icon: Iconsax.logout,
+                    title: 'Log Out',
+                    subtitle: 'Sign out from this account',
+                    isDestructive: true,
+                    onTap: () => _showLogoutDialog(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         );
@@ -169,19 +145,305 @@ class ProfileView extends StatelessWidget {
     );
   }
 
-  // ================= HELPERS =================
+  AppBar _buildAppBar(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final canPop = Navigator.of(context).canPop();
 
-  Widget _buildCard({required String title, required List<Widget> children}) {
+    return AppBar(
+      automaticallyImplyLeading: false,
+      backgroundColor: theme.cardColor,
+      elevation: 0,
+      leading: canPop
+          ? IconButton(
+              onPressed: () => Get.back(),
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.grey[850] : Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.arrow_back_ios_rounded,
+                  size: 20,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+            )
+          : null,
+      title: ShaderMask(
+        shaderCallback: (Rect bounds) => const LinearGradient(
+          colors: [Color(0xFFFF9800), Color(0xFFFF5722)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height)),
+        child: const Text(
+          'Profile',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
+      ),
+      actions: [
+        IconButton(
+          onPressed: () {
+            final currentUser = _authController.user.value;
+            if (currentUser == null) {
+              Get.snackbar(
+                'Unavailable',
+                'User data is not loaded yet.',
+                snackPosition: SnackPosition.BOTTOM,
+              );
+              return;
+            }
+            _showEditProfileDialog(context, currentUser);
+          },
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey[850] : Colors.grey[100],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Iconsax.edit,
+              size: 20,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+      ],
+    );
+  }
+
+  Widget _buildNoUserState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Iconsax.user_remove, size: 70, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No user data available. Please login first.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => Get.offAllNamed(Routes.LOGIN),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Login'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroCard(
+    BuildContext context,
+    UserModel user,
+    String avatarUrl,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Colors.orange.shade500, Colors.deepOrange.shade400],
+        ),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
+            color: Colors.orange.withOpacity(isDark ? 0.25 : 0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 36,
+            backgroundColor: Colors.white,
+            backgroundImage: avatarUrl.isNotEmpty
+                ? NetworkImage(avatarUrl)
+                : null,
+            child: avatarUrl.isEmpty
+                ? Text(
+                    user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  user.name,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  user.email,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    user.role.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () => _showEditProfileDialog(context, user),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Iconsax.edit, color: Colors.white, size: 20),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsRow(BuildContext context, UserModel user) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildStatCard(
+            icon: Iconsax.calendar,
+            title: 'Joined',
+            value: user.createdAtFormatted,
+            color: Colors.blue,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildStatCard(
+            icon: Iconsax.global,
+            title: 'Language',
+            value: user.settings.language,
+            color: Colors.green,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildStatCard(
+            icon: Iconsax.shield_tick,
+            title: 'Status',
+            value: user.role,
+            color: Colors.purple,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+  }) {
+    final isDark = Get.isDarkMode;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: Get.theme.cardColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 8),
+          Text(title, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionCard(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+            blurRadius: 14,
             offset: const Offset(0, 5),
           ),
         ],
@@ -189,47 +451,213 @@ class ProfileView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 18, color: AppColors.primary),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           ...children,
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(String title, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+  Widget _buildInfoTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[900] : Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+        ),
+      ),
       child: Row(
         children: [
-          Text('$title: ', style: const TextStyle(fontWeight: FontWeight.w600)),
-          Expanded(child: Text(value)),
+          Icon(icon, size: 18, color: Colors.grey[500]),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSwitchRow(String title, bool value, Function(bool) onChanged) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+  Widget _buildToggleTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[900] : Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+        ),
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-          Switch(value: value, onChanged: onChanged),
+          Icon(icon, size: 18, color: Colors.grey[500]),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: AppColors.primary,
+          ),
         ],
       ),
     );
   }
 
-  void _showEditProfileDialog(BuildContext context, user) {
+  Widget _buildActionTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isDestructive
+        ? Colors.red
+        : (isDark ? Colors.white : Colors.black87);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: isDark ? Colors.grey[900] : Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: color),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: color,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Iconsax.arrow_right_3, size: 16, color: Colors.grey[500]),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _resolveAvatarUrl(String? raw) {
+    final avatar = (raw ?? '').trim();
+    if (avatar.isEmpty) return '';
+    if (avatar.startsWith('http')) {
+      return AppConfig.transformUrl(avatar);
+    }
+    return '${AppConfig.imageUrl}/$avatar';
+  }
+
+  void _showComingSoon(String title) {
+    Get.snackbar(
+      'Coming Soon',
+      '$title are not connected yet.',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
+  void _showEditProfileDialog(BuildContext context, UserModel user) {
     final TextEditingController nameController = TextEditingController(
       text: user.name,
     );
-    _profileController.selectedImage.value = null; // Reset
+    _profileController.selectedImage.value = null;
 
     Get.dialog(
       AlertDialog(
@@ -238,20 +666,21 @@ class ProfileView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Avatar edit
               GestureDetector(
                 onTap: () => _profileController.pickImage(),
                 child: Obx(() {
                   final pickedImage = _profileController.selectedImage.value;
+                  final avatarUrl = _resolveAvatarUrl(user.avatar);
                   ImageProvider? bgImage;
+
                   if (pickedImage != null) {
                     bgImage = FileImage(pickedImage);
-                  } else if (user.avatar != null && user.avatar!.isNotEmpty) {
-                    bgImage = NetworkImage(user.avatar!);
+                  } else if (avatarUrl.isNotEmpty) {
+                    bgImage = NetworkImage(avatarUrl);
                   }
 
                   return CircleAvatar(
-                    radius: 40,
+                    radius: 42,
                     backgroundColor: Colors.grey[200],
                     backgroundImage: bgImage,
                     child: bgImage == null
@@ -272,10 +701,7 @@ class ProfileView extends StatelessWidget {
               const SizedBox(height: 20),
               TextField(
                 controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Name'),
               ),
             ],
           ),
@@ -284,7 +710,7 @@ class ProfileView extends StatelessWidget {
           TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
-              _profileController.updateUserProfile(nameController.text);
+              _profileController.updateUserProfile(nameController.text.trim());
               Get.back();
             },
             child: const Text('Save'),
@@ -299,10 +725,10 @@ class ProfileView extends StatelessWidget {
       AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
-          children: [
+          children: const [
             Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
-            const SizedBox(width: 12),
-            const Text('Confirm Logout'),
+            SizedBox(width: 12),
+            Text('Confirm Logout'),
           ],
         ),
         content: const Text(
@@ -316,8 +742,8 @@ class ProfileView extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              Get.back(); // Close dialog
-              _authController.logout(); // Perform logout
+              Get.back();
+              _authController.logout();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,

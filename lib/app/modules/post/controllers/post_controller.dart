@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../data/models/category_model.dart';
 import '../../../data/services/category_service.dart';
@@ -11,14 +12,16 @@ class PostController extends GetxController {
 
   final titleController = TextEditingController();
   final contentController = TextEditingController();
-  final imageController = TextEditingController();
-  final videoController = TextEditingController();
+  final RxString imagePath = ''.obs;
+  final RxString videoPath = ''.obs;
 
   final categories = <CategoryModel>[].obs;
   final selectedCategory = Rxn<CategoryModel>();
 
   final isLoading = false.obs;
   final isPublishing = false.obs;
+
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void onInit() {
@@ -28,11 +31,29 @@ class PostController extends GetxController {
 
   @override
   void onClose() {
-    titleController.dispose();
-    contentController.dispose();
-    imageController.dispose();
-    videoController.dispose();
     super.onClose();
+  }
+
+  // -------------------- Media Pickers --------------------
+  Future<void> pickImage() async {
+    final XFile? file =
+        await _picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
+    if (file != null) {
+      imagePath.value = file.path;
+    }
+  }
+
+  Future<void> pickVideo() async {
+    final XFile? file =
+        await _picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(minutes: 5));
+    if (file != null) {
+      videoPath.value = file.path;
+    }
+  }
+
+  void clearMedia() {
+    imagePath.value = '';
+    videoPath.value = '';
   }
 
   // -------------------- Categories --------------------
@@ -78,6 +99,16 @@ class PostController extends GetxController {
       return;
     }
 
+    final title = titleController.text.trim();
+    final content = contentController.text.trim();
+    final hasMedia = imagePath.value.isNotEmpty || videoPath.value.isNotEmpty;
+
+    // Allow publishing when either there is text (title/content) or media attached.
+    if (title.isEmpty && content.isEmpty && !hasMedia) {
+      Get.snackbar('Error', 'Please add a title or content, or attach media.');
+      return;
+    }
+
     if (selectedCategory.value == null) {
       Get.snackbar('Error', 'Please select a category.');
       return;
@@ -88,10 +119,10 @@ class PostController extends GetxController {
       isPublishing.value = true;
 
       await PostService.createPost(
-        title: titleController.text.trim(),
-        content: contentController.text.trim(),
-        imageUrl: imageController.text.trim(),
-        videoUrl: videoController.text.trim(),
+        title: title,
+        content: content,
+        imagePath: imagePath.value.isNotEmpty ? imagePath.value : null,
+        videoPath: videoPath.value.isNotEmpty ? videoPath.value : null,
         categoryId: selectedCategory.value!.id,
       );
 

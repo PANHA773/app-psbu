@@ -30,11 +30,14 @@ class NotificationsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Instantiate controller
-    final NotificationsController controller = Get.put(NotificationsController());
+    final NotificationsController controller = Get.put(
+      NotificationsController(),
+    );
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: _buildAppBar(context),
       body: Obx(() {
         if (controller.isLoading.isTrue && controller.notifications.isEmpty) {
           return const Center(child: CircularProgressIndicator());
@@ -48,31 +51,34 @@ class NotificationsView extends StatelessWidget {
     );
   }
 
-  AppBar _buildAppBar() {
+  AppBar _buildAppBar(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.appBarTheme.backgroundColor ?? theme.cardColor,
       elevation: 0,
       leading: IconButton(
         onPressed: () => Get.back(),
         icon: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: isDark ? Colors.grey[850] : Colors.grey[100],
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.arrow_back_ios_new_rounded,
             size: 20,
-            color: Colors.black87,
+            color: isDark ? Colors.white : Colors.black87,
           ),
         ),
       ),
-      title: const Text(
+      title: Text(
         'Notifications',
         style: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w700,
-          color: Colors.black87,
+          color: isDark ? Colors.white : Colors.black87,
         ),
       ),
       centerTitle: true,
@@ -80,6 +86,8 @@ class NotificationsView extends StatelessWidget {
   }
 
   Widget _buildEmptyState() {
+    final isDark = Get.isDarkMode;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -91,13 +99,15 @@ class NotificationsView extends StatelessWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[500],
+              color: isDark ? Colors.grey[400] : Colors.grey[500],
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'You\'re all caught up!',
-            style: TextStyle(color: Colors.grey[400]),
+            style: TextStyle(
+              color: isDark ? Colors.grey[500] : Colors.grey[400],
+            ),
           ),
         ],
       ),
@@ -108,21 +118,16 @@ class NotificationsView extends StatelessWidget {
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
       slivers: [
-        SliverToBoxAdapter(
-          child: _buildHeaderCard(controller),
-        ),
+        SliverToBoxAdapter(child: _buildHeaderCard(controller)),
         SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final notification = controller.notifications[index];
-              return _buildNotificationItem(
-                context,
-                notification: notification,
-                onTap: () => controller.markNotificationAsRead(notification.id),
-              );
-            },
-            childCount: controller.notifications.length,
-          ),
+          delegate: SliverChildBuilderDelegate((context, index) {
+            final notification = controller.notifications[index];
+            return _buildNotificationItem(
+              context,
+              notification: notification,
+              onTap: () => controller.markNotificationAsRead(notification.id),
+            );
+          }, childCount: controller.notifications.length),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 30)),
       ],
@@ -141,17 +146,27 @@ class NotificationsView extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.notifications_active_rounded, size: 32, color: Colors.blue),
+          const Icon(
+            Icons.notifications_active_rounded,
+            size: 32,
+            color: Colors.blue,
+          ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Activity', style: TextStyle(color: Colors.grey)),
-                Obx(() => Text(
-                  '${controller.unreadCount} Unread',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue.shade700),
-                )),
+                Obx(
+                  () => Text(
+                    '${controller.unreadCount} Unread',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -165,13 +180,18 @@ class NotificationsView extends StatelessWidget {
     required NotificationModel notification,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     bool isUnread = !notification.isRead;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       decoration: BoxDecoration(
-        color: isUnread ? Colors.blue.withOpacity(0.05) : Colors.white,
+        color: isUnread
+            ? Colors.blue.withValues(alpha: isDark ? 0.16 : 0.05)
+            : Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(
+          color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+        ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -189,7 +209,8 @@ class NotificationsView extends StatelessWidget {
                     width: 48,
                     height: 48,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(color: Colors.grey[200]),
+                    placeholder: (context, url) =>
+                        Container(color: Colors.grey[200]),
                     errorWidget: (context, url, error) => Container(
                       color: Colors.grey[200],
                       child: const Icon(Iconsax.user, color: Colors.grey),
@@ -206,14 +227,22 @@ class NotificationsView extends StatelessWidget {
                           text: '${notification.sender.name} ',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: isUnread ? Colors.black87 : Colors.grey[700],
+                            color: isUnread
+                                ? (isDark ? Colors.white : Colors.black87)
+                                : (isDark
+                                      ? Colors.grey[300]
+                                      : Colors.grey[700]),
                           ),
                           children: [
                             TextSpan(
                               text: notification.message,
                               style: TextStyle(
                                 fontWeight: FontWeight.normal,
-                                color: isUnread ? Colors.black87 : Colors.grey[600],
+                                color: isUnread
+                                    ? (isDark ? Colors.white : Colors.black87)
+                                    : (isDark
+                                          ? Colors.grey[400]
+                                          : Colors.grey[600]),
                               ),
                             ),
                           ],
@@ -224,22 +253,29 @@ class NotificationsView extends StatelessWidget {
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                           Icon(Iconsax.clock, size: 14, color: Colors.grey[400]),
+                          Icon(
+                            Iconsax.clock,
+                            size: 14,
+                            color: Colors.grey[400],
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             _formatTimeAgo(context, notification.createdAt),
-                            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[500],
+                            ),
                           ),
                           const Spacer(),
-                          if(isUnread)
-                             Container(
+                          if (isUnread)
+                            Container(
                               width: 10,
                               height: 10,
                               decoration: const BoxDecoration(
                                 color: Colors.blue,
                                 shape: BoxShape.circle,
                               ),
-                            )
+                            ),
                         ],
                       ),
                     ],
@@ -254,11 +290,17 @@ class NotificationsView extends StatelessWidget {
   }
 
   Widget _buildBottomActions(NotificationsController controller) {
+    final isDark = Get.isDarkMode;
+
     return Container(
       height: 70,
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey[200]!)),
+        color: Get.theme.cardColor,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+          ),
+        ),
       ),
       child: Row(
         children: [

@@ -4,6 +4,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../data/models/news_model.dart';
 import '../../../data/models/comment_model.dart';
+import '../../../data/models/video/views/video_player_screen.dart';
 import '../../../../core/app_colors.dart';
 import '../controllers/news_detail_controller.dart';
 
@@ -12,8 +13,11 @@ class NewsDetailView extends GetView<NewsDetailController> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Obx(() {
         final news = controller.news.value;
 
@@ -29,7 +33,12 @@ class NewsDetailView extends GetView<NewsDetailController> {
                 const SizedBox(height: 16),
                 Text(
                   'Loading article...',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  style: TextStyle(
+                    color: theme.textTheme.bodyMedium?.color?.withValues(
+                      alpha: 0.7,
+                    ),
+                    fontSize: 14,
+                  ),
                 ),
               ],
             ),
@@ -46,101 +55,88 @@ class NewsDetailView extends GetView<NewsDetailController> {
               pinned: true,
               snap: false,
               elevation: 0,
-              backgroundColor: Colors.transparent,
+              backgroundColor: isDark ? const Color(0xFF181920) : Colors.white,
+              surfaceTintColor: Colors.transparent,
               leading: Padding(
                 padding: const EdgeInsets.only(left: 8, top: 8),
-                child: CircleAvatar(
-                  backgroundColor: Colors.black.withOpacity(0.3),
-                  child: IconButton(
-                    icon: const Icon(
-                      Iconsax.arrow_left_2,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                    onPressed: () => Get.back(),
-                  ),
+                child: _overlayCircleAction(
+                  icon: Iconsax.arrow_left_2,
+                  onTap: Get.back,
                 ),
               ),
               actions: [
                 Padding(
                   padding: const EdgeInsets.only(right: 8, top: 8),
-                  child: CircleAvatar(
-                    backgroundColor: Colors.black.withOpacity(0.3),
-                    child: Obx(
-                      () => IconButton(
-                        icon: Icon(
-                          controller.isGood.value
-                              ? Icons
-                                    .bookmark_added // Using standard Icons for clarity
-                              : Icons.bookmark_add_outlined,
-                          color: controller.isGood.value
-                              ? Colors.orange
-                              : Colors.white,
-                          size: 24,
-                        ),
-                        onPressed: () => controller.toggleGood(),
-                      ),
+                  child: Obx(
+                    () => _overlayCircleAction(
+                      icon: controller.isGood.value
+                          ? Icons.bookmark_added
+                          : Icons.bookmark_add_outlined,
+                      iconColor: controller.isGood.value
+                          ? const Color(0xFFFF8A00)
+                          : Colors.white,
+                      onTap: controller.toggleGood,
                     ),
                   ),
                 ),
               ],
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
+                  fit: StackFit.expand,
                   children: [
-                    // Hero Image
-                    CachedNetworkImage(
-                      imageUrl: news.image ?? '',
-                      width: double.infinity,
-                      height: 360,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        height: 360,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              AppColors.primary.withOpacity(0.1),
-                              AppColors.primary.withOpacity(0.05),
-                            ],
+                    news.image != null && news.image!.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: news.image!,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) =>
+                                Container(color: const Color(0xFFFFF1E3)),
+                            errorWidget: (context, url, error) => Container(
+                              color: const Color(0xFFFFF1E3),
+                              child: const Center(
+                                child: Icon(
+                                  Iconsax.gallery,
+                                  size: 44,
+                                  color: Color(0xFFFF8A00),
+                                ),
+                              ),
+                            ),
+                          )
+                        : Container(
+                            color: const Color(0xFFFFF1E3),
+                            child: const Center(
+                              child: Icon(
+                                Iconsax.gallery,
+                                size: 44,
+                                color: Color(0xFFFF8A00),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        height: 360,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              AppColors.primary.withOpacity(0.2),
-                              AppColors.primary.withOpacity(0.1),
-                            ],
-                          ),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Iconsax.gallery,
-                            size: 60,
-                            color: AppColors.primary.withOpacity(0.4),
-                          ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.12),
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.7),
+                          ],
                         ),
                       ),
                     ),
-
-                    // Gradient Overlay
-                    Container(
-                      height: 360,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.bottomCenter,
-                          end: Alignment.topCenter,
-                          colors: [
-                            Colors.black.withOpacity(0.6),
-                            Colors.transparent,
-                            Colors.transparent,
-                          ],
-                          stops: const [0.0, 0.5, 1.0],
+                    Positioned(
+                      left: 20,
+                      right: 20,
+                      bottom: 20,
+                      child: Text(
+                        news.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          height: 1.25,
                         ),
                       ),
                     ),
@@ -153,8 +149,8 @@ class NewsDetailView extends GetView<NewsDetailController> {
             SliverToBoxAdapter(
               child: Container(
                 transform: Matrix4.translationValues(0, -24, 0),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration: BoxDecoration(
+                  color: theme.scaffoldBackgroundColor,
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(30),
                     topRight: Radius.circular(30),
@@ -168,51 +164,101 @@ class NewsDetailView extends GetView<NewsDetailController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Category Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          news.categoryName,
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: Text(
+                              news.categoryName,
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF23252C)
+                                  : const Color(0xFFF2F3F5),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: Text(
+                              _estimateReadTime(news.content),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? Colors.grey[300]
+                                    : Colors.grey[700],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 18),
 
-                      // Title
                       Text(
                         news.title,
-                        style: const TextStyle(
-                          fontSize: 26,
+                        style: TextStyle(
+                          fontSize: 27,
                           fontWeight: FontWeight.w800,
-                          height: 1.4,
-                          color: Colors.black87,
-                          letterSpacing: -0.5,
+                          height: 1.35,
+                          color: isDark ? Colors.white : Colors.black87,
+                          letterSpacing: -0.4,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      if (news.video != null && news.video!.isNotEmpty) ...[
+                        const SizedBox(height: 14),
+                        OutlinedButton.icon(
+                          onPressed: () => Get.to(
+                            () => VideoPlayerScreen(videoUrl: news.video!),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            side: BorderSide(
+                              color: AppColors.primary.withValues(alpha: 0.35),
+                            ),
+                            minimumSize: const Size(double.infinity, 44),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(Iconsax.play_circle, size: 18),
+                          label: const Text(
+                            'Watch Video',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 22),
 
                       // Author & Metadata Row
                       Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          border: Border(
-                            top: BorderSide(color: Colors.grey[200]!, width: 1),
-                            bottom: BorderSide(
-                              color: Colors.grey[200]!,
-                              width: 1,
-                            ),
+                          color: isDark
+                              ? const Color(0xFF1C1D24)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF2B2D36)
+                                : const Color(0xFFE9ECF1),
                           ),
                         ),
                         child: Row(
@@ -223,15 +269,11 @@ class NewsDetailView extends GetView<NewsDetailController> {
                               height: 50,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 3,
-                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
+                                    color: Colors.black.withValues(alpha: 0.06),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 5),
                                   ),
                                 ],
                               ),
@@ -244,7 +286,7 @@ class NewsDetailView extends GetView<NewsDetailController> {
                                         placeholder: (context, url) =>
                                             Container(
                                               color: AppColors.primary
-                                                  .withOpacity(0.1),
+                                                  .withValues(alpha: 0.1),
                                               child: Center(
                                                 child: Icon(
                                                   Iconsax.user,
@@ -255,8 +297,8 @@ class NewsDetailView extends GetView<NewsDetailController> {
                                             ),
                                       )
                                     : Container(
-                                        color: AppColors.primary.withOpacity(
-                                          0.1,
+                                        color: AppColors.primary.withValues(
+                                          alpha: 0.1,
                                         ),
                                         child: Center(
                                           child: Icon(
@@ -277,10 +319,12 @@ class NewsDetailView extends GetView<NewsDetailController> {
                                 children: [
                                   Text(
                                     news.authorName,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.black87,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black87,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -327,10 +371,10 @@ class NewsDetailView extends GetView<NewsDetailController> {
                       Text(
                         news.content,
                         style: TextStyle(
-                          fontSize: 16,
-                          height: 1.8,
-                          color: Colors.grey[700],
-                          letterSpacing: 0.3,
+                          fontSize: 15.5,
+                          height: 1.72,
+                          color: isDark ? Colors.grey[300] : Colors.grey[800],
+                          letterSpacing: 0.15,
                         ),
                       ),
                       const SizedBox(height: 40),
@@ -348,16 +392,19 @@ class NewsDetailView extends GetView<NewsDetailController> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.grey[50],
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.grey[200]!),
+                              color: isDark
+                                  ? const Color(0xFF23252C)
+                                  : const Color(0xFFF3F4F6),
+                              borderRadius: BorderRadius.circular(99),
                             ),
                             child: Text(
                               tag,
                               style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                                color: isDark
+                                    ? Colors.grey[300]
+                                    : Colors.grey[700],
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           );
@@ -384,12 +431,12 @@ class NewsDetailView extends GetView<NewsDetailController> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Text(
+                          Text(
                             'Comments',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
-                              color: Colors.black87,
+                              color: isDark ? Colors.white : Colors.black87,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -400,7 +447,7 @@ class NewsDetailView extends GetView<NewsDetailController> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
+                                color: AppColors.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
@@ -433,9 +480,15 @@ class NewsDetailView extends GetView<NewsDetailController> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(32),
                             decoration: BoxDecoration(
-                              color: Colors.grey[50],
+                              color: isDark
+                                  ? const Color(0xFF1C1D24)
+                                  : const Color(0xFFF7F8FA),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.grey[200]!),
+                              border: Border.all(
+                                color: isDark
+                                    ? const Color(0xFF2B2D36)
+                                    : const Color(0xFFEAECEF),
+                              ),
                             ),
                             child: Column(
                               children: [
@@ -473,20 +526,30 @@ class NewsDetailView extends GetView<NewsDetailController> {
                               const SizedBox(height: 20),
                           itemBuilder: (context, i) {
                             final c = controller.comments[i];
-                            final isMine = c.authorId != null &&
+                            final isMine =
+                                c.authorId != null &&
                                 c.authorId == controller.currentUserId.value;
                             return GestureDetector(
-                              onLongPress:
-                                  isMine ? () => _showCommentActions(c) : null,
+                              onLongPress: isMine
+                                  ? () => _showCommentActions(c)
+                                  : null,
                               child: Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: isDark
+                                      ? const Color(0xFF1C1D24)
+                                      : Colors.white,
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: Colors.grey[100]!),
+                                  border: Border.all(
+                                    color: isDark
+                                        ? const Color(0xFF2B2D36)
+                                        : const Color(0xFFE9ECF1),
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.02),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.03,
+                                      ),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     ),
@@ -527,10 +590,12 @@ class NewsDetailView extends GetView<NewsDetailController> {
                                             children: [
                                               Text(
                                                 c.authorName,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontWeight: FontWeight.w700,
                                                   fontSize: 14,
-                                                  color: Colors.black87,
+                                                  color: isDark
+                                                      ? Colors.white
+                                                      : Colors.black87,
                                                 ),
                                               ),
                                               Text(
@@ -548,7 +613,9 @@ class NewsDetailView extends GetView<NewsDetailController> {
                                             style: TextStyle(
                                               fontSize: 14,
                                               height: 1.5,
-                                              color: Colors.grey[700],
+                                              color: isDark
+                                                  ? Colors.grey[300]
+                                                  : Colors.grey[700],
                                             ),
                                           ),
                                           if (isMine) ...[
@@ -566,7 +633,8 @@ class NewsDetailView extends GetView<NewsDetailController> {
                                                   icon: Iconsax.trash,
                                                   label: 'Delete',
                                                   color: Colors.red,
-                                                  onTap: () => _confirmDelete(c),
+                                                  onTap: () =>
+                                                      _confirmDelete(c),
                                                 ),
                                               ],
                                             ),
@@ -587,17 +655,21 @@ class NewsDetailView extends GetView<NewsDetailController> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: isDark
+                              ? const Color(0xFF1C1D24)
+                              : Colors.white,
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primary.withOpacity(0.08),
+                              color: AppColors.primary.withValues(alpha: 0.08),
                               blurRadius: 20,
                               offset: const Offset(0, 8),
                             ),
                           ],
                           border: Border.all(
-                            color: AppColors.primary.withOpacity(0.1),
+                            color: isDark
+                                ? const Color(0xFF2B2D36)
+                                : AppColors.primary.withValues(alpha: 0.14),
                           ),
                         ),
                         child: Row(
@@ -605,11 +677,18 @@ class NewsDetailView extends GetView<NewsDetailController> {
                             Expanded(
                               child: TextField(
                                 controller: controller.commentController,
-                                style: const TextStyle(fontSize: 14),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: isDark
+                                      ? Colors.grey[200]
+                                      : Colors.black87,
+                                ),
                                 decoration: InputDecoration(
                                   hintText: 'Share your thoughts...',
                                   hintStyle: TextStyle(
-                                    color: Colors.grey[400],
+                                    color: isDark
+                                        ? Colors.grey[500]
+                                        : Colors.grey[400],
                                     fontSize: 14,
                                   ),
                                   contentPadding: const EdgeInsets.symmetric(
@@ -628,7 +707,7 @@ class NewsDetailView extends GetView<NewsDetailController> {
                                   gradient: LinearGradient(
                                     colors: [
                                       AppColors.primary,
-                                      AppColors.primary.withOpacity(0.8),
+                                      AppColors.primary.withValues(alpha: 0.8),
                                     ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
@@ -636,7 +715,9 @@ class NewsDetailView extends GetView<NewsDetailController> {
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.primary.withOpacity(0.3),
+                                      color: AppColors.primary.withValues(
+                                        alpha: 0.3,
+                                      ),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     ),
@@ -663,19 +744,13 @@ class NewsDetailView extends GetView<NewsDetailController> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
-                              color: Colors.grey[800],
+                              color: isDark ? Colors.white : Colors.grey[800],
                             ),
                           ),
-                          TextButton(
-                            onPressed: () {},
-                            child: Text(
-                              'See All',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                          Icon(
+                            Iconsax.arrow_right_3,
+                            size: 18,
+                            color: isDark ? Colors.grey[400] : Colors.grey[500],
                           ),
                         ],
                       ),
@@ -718,10 +793,10 @@ class NewsDetailView extends GetView<NewsDetailController> {
       // Bottom Action Bar
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF15161C) : Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 20,
               offset: const Offset(0, -5),
             ),
@@ -745,7 +820,11 @@ class NewsDetailView extends GetView<NewsDetailController> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    side: BorderSide(color: Colors.grey[200]!),
+                    side: BorderSide(
+                      color: isDark
+                          ? const Color(0xFF2B2D36)
+                          : Colors.grey[200]!,
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -753,13 +832,13 @@ class NewsDetailView extends GetView<NewsDetailController> {
                       Icon(
                         Iconsax.arrow_left,
                         size: 16,
-                        color: Colors.grey[600],
+                        color: isDark ? Colors.grey[300] : Colors.grey[600],
                       ),
                       const SizedBox(width: 4),
                       Text(
                         'Back',
                         style: TextStyle(
-                          color: Colors.grey[600],
+                          color: isDark ? Colors.grey[300] : Colors.grey[600],
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -809,7 +888,38 @@ class NewsDetailView extends GetView<NewsDetailController> {
     );
   }
 
+  Widget _overlayCircleAction({
+    required IconData icon,
+    required VoidCallback onTap,
+    Color iconColor = Colors.white,
+  }) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.28),
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(icon, size: 20, color: iconColor),
+        ),
+      ),
+    );
+  }
+
+  String _estimateReadTime(String content) {
+    final wordCount = content
+        .trim()
+        .split(RegExp(r'\\s+'))
+        .where((value) => value.isNotEmpty)
+        .length;
+    final minutes = (wordCount / 220).ceil();
+    return '${minutes < 1 ? 1 : minutes} min read';
+  }
+
   Widget _buildRelatedArticle(NewsModel related) {
+    final isDark = Get.isDarkMode;
     return GestureDetector(
       onTap: () => Get.toNamed(
         '/news-detail',
@@ -820,11 +930,14 @@ class NewsDetailView extends GetView<NewsDetailController> {
         width: 200,
         margin: const EdgeInsets.only(right: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isDark ? const Color(0xFF1C1D24) : Colors.white,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? const Color(0xFF2B2D36) : const Color(0xFFE9ECF1),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -842,7 +955,7 @@ class NewsDetailView extends GetView<NewsDetailController> {
               child: Container(
                 height: 120,
                 width: double.infinity,
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 child: related.image != null
                     ? Image.network(
                         related.image!,
@@ -851,7 +964,7 @@ class NewsDetailView extends GetView<NewsDetailController> {
                           child: Icon(
                             Iconsax.image,
                             size: 40,
-                            color: AppColors.primary.withOpacity(0.3),
+                            color: AppColors.primary.withValues(alpha: 0.3),
                           ),
                         ),
                       )
@@ -859,7 +972,7 @@ class NewsDetailView extends GetView<NewsDetailController> {
                         child: Icon(
                           Iconsax.image,
                           size: 40,
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: AppColors.primary.withValues(alpha: 0.3),
                         ),
                       ),
               ),
@@ -876,7 +989,7 @@ class NewsDetailView extends GetView<NewsDetailController> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey[800],
+                      color: isDark ? Colors.white : Colors.grey[800],
                       height: 1.4,
                     ),
                     maxLines: 2,
@@ -910,6 +1023,7 @@ class NewsDetailView extends GetView<NewsDetailController> {
   }
 
   Widget _buildDocumentsSection(NewsModel news) {
+    final isDark = Get.isDarkMode;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -922,7 +1036,7 @@ class NewsDetailView extends GetView<NewsDetailController> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: Colors.grey[800],
+                color: isDark ? Colors.white : Colors.grey[800],
               ),
             ),
           ],
@@ -930,9 +1044,11 @@ class NewsDetailView extends GetView<NewsDetailController> {
         const SizedBox(height: 16),
         Container(
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: isDark ? const Color(0xFF1C1D24) : Colors.grey[50],
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey[200]!),
+            border: Border.all(
+              color: isDark ? const Color(0xFF2B2D36) : Colors.grey[200]!,
+            ),
           ),
           child: ListView.separated(
             shrinkWrap: true,
@@ -947,7 +1063,7 @@ class NewsDetailView extends GetView<NewsDetailController> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -1006,13 +1122,18 @@ class NewsDetailView extends GetView<NewsDetailController> {
     required VoidCallback onPressed,
   }) {
     final effectiveColor = activeColor ?? AppColors.primary;
+    final isDark = Get.isDarkMode;
     return Container(
       decoration: BoxDecoration(
-        color: isActive ? effectiveColor.withOpacity(0.1) : Colors.grey[50],
+        color: isActive
+            ? effectiveColor.withValues(alpha: 0.12)
+            : (isDark ? const Color(0xFF23252C) : Colors.grey[50]),
         borderRadius: BorderRadius.circular(12),
         border: isActive
-            ? Border.all(color: effectiveColor.withOpacity(0.3))
-            : Border.all(color: Colors.grey[200]!),
+            ? Border.all(color: effectiveColor.withValues(alpha: 0.3))
+            : Border.all(
+                color: isDark ? const Color(0xFF2B2D36) : Colors.grey[200]!,
+              ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -1096,7 +1217,7 @@ class NewsDetailView extends GetView<NewsDetailController> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
@@ -1128,9 +1249,7 @@ class NewsDetailView extends GetView<NewsDetailController> {
           controller: textController,
           maxLines: null,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Update your comment...',
-          ),
+          decoration: const InputDecoration(hintText: 'Update your comment...'),
         ),
         actions: [
           TextButton(onPressed: Get.back, child: const Text('Cancel')),
@@ -1138,10 +1257,7 @@ class NewsDetailView extends GetView<NewsDetailController> {
             onPressed: () {
               final newText = textController.text.trim();
               if (newText.isNotEmpty) {
-                controller.editComment(
-                  commentId: comment.id,
-                  content: newText,
-                );
+                controller.editComment(commentId: comment.id, content: newText);
                 Get.back();
               }
             },
@@ -1157,8 +1273,7 @@ class NewsDetailView extends GetView<NewsDetailController> {
     Get.dialog(
       AlertDialog(
         title: const Text('Delete comment'),
-        content:
-            const Text('Are you sure you want to delete this comment?'),
+        content: const Text('Are you sure you want to delete this comment?'),
         actions: [
           TextButton(onPressed: Get.back, child: const Text('Cancel')),
           ElevatedButton(
@@ -1167,10 +1282,7 @@ class NewsDetailView extends GetView<NewsDetailController> {
               controller.deleteComment(comment.id);
               Get.back();
             },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.white),
-            ),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 
 import '../models/news_model.dart';
 import '../models/category_model.dart';
@@ -14,6 +15,17 @@ class PostService {
       }
       return rawData;
     }
+    if (rawData is Map) {
+      // Looser map typing
+      final map = Map<String, dynamic>.from(rawData);
+      if (map.containsKey('data') && map['data'] is Map) {
+        return Map<String, dynamic>.from(map['data']);
+      }
+      return map;
+    }
+    if (rawData is String) {
+      throw Exception(rawData);
+    }
     throw Exception('Invalid server response');
   }
 
@@ -22,6 +34,9 @@ class PostService {
     if (rawData is Map && rawData.containsKey('data') && rawData['data'] is List) {
       return rawData['data'];
     }
+    if (rawData is String) {
+      throw Exception(rawData);
+    }
     throw Exception('Invalid server response');
   }
 
@@ -29,30 +44,66 @@ class PostService {
   static Future<NewsModel> createPost({
     required String title,
     required String content,
-    String? imageUrl,
-    String? videoUrl,
+    String? imagePath,
+    String? videoPath,
     required String categoryId,
   }) async {
     try {
+      final String safeTitle = title.trim();
+      final String safeContent = content.trim();
+      final bool hasImage = imagePath != null && imagePath.isNotEmpty;
+      final bool hasVideo = videoPath != null && videoPath.isNotEmpty;
+
+      dynamic payload;
+
+      if (hasImage || hasVideo) {
+        final formData = FormData();
+        formData.fields.add(MapEntry('title', safeTitle));
+        formData.fields.add(MapEntry('content', safeContent));
+        formData.fields.add(MapEntry('category', categoryId));
+
+        if (hasImage) {
+          formData.files.add(
+            MapEntry(
+              'image',
+              await MultipartFile.fromFile(
+                imagePath!,
+                filename: p.basename(imagePath),
+              ),
+            ),
+          );
+        }
+
+        if (hasVideo) {
+          formData.files.add(
+            MapEntry(
+              'video',
+              await MultipartFile.fromFile(
+                videoPath!,
+                filename: p.basename(videoPath),
+              ),
+            ),
+          );
+        }
+
+        payload = formData;
+      } else {
+        payload = {
+          'title': safeTitle,
+          'content': safeContent,
+          'category': categoryId,
+        };
+      }
+
       final response = await DioClient.dio.post(
         '/news',
-        data: {
-          'title': title,
-          'content': content,
-          'image': imageUrl?.isNotEmpty == true ? imageUrl : null,
-          'video': videoUrl?.isNotEmpty == true ? videoUrl : null,
-          'category': categoryId,
-        },
+        data: payload,
       );
 
       final postData = _extractMap(response.data);
       return NewsModel.fromJson(postData);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data?['message'] ??
-            e.message ??
-            'Failed to create post',
-      );
+      throw Exception(_extractErrorMessage(e, 'Failed to create post'));
     }
   }
 
@@ -130,7 +181,7 @@ class PostService {
         String? categoryId,
       }) async {
     try {
-      final response = await DioClient.dio.patch(
+      final response = await DioClient.dio.put(
         '/news/$postId',
         data: {
           'title': title,
@@ -144,11 +195,7 @@ class PostService {
       final postData = _extractMap(response.data);
       return NewsModel.fromJson(postData);
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data?['message'] ??
-            e.message ??
-            'Failed to update post',
-      );
+      throw Exception(_extractErrorMessage(e, 'Failed to update post'));
     }
   }
 
@@ -157,11 +204,7 @@ class PostService {
     try {
       await DioClient.dio.delete('/news/$postId');
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data?['message'] ??
-            e.message ??
-            'Failed to delete post',
-      );
+      throw Exception(_extractErrorMessage(e, 'Failed to delete post'));
     }
   }
 
@@ -193,11 +236,7 @@ class PostService {
       }
       return newsList;
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data?['message'] ??
-            e.message ??
-            'Failed to fetch bookmarks',
-      );
+      throw Exception(_extractErrorMessage(e, 'Failed to fetch bookmarks'));
     } catch (e) {
       // Catch other parsing errors
       throw Exception('Failed to parse bookmarks: $e');
@@ -208,11 +247,7 @@ class PostService {
     try {
       await DioClient.dio.put('/users/bookmark/$postId');
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data?['message'] ??
-            e.message ??
-            'Failed to toggle bookmark',
-      );
+      throw Exception(_extractErrorMessage(e, 'Failed to toggle bookmark'));
     }
   }
 
@@ -243,13 +278,16 @@ class PostService {
 
       return data.map((json) => CategoryModel.fromJson(json)).toList();
     } on DioException catch (e) {
-      throw Exception(
-        e.response?.data?['message'] ??
-            e.message ??
-            'Failed to fetch categories',
-      );
+      throw Exception(_extractErrorMessage(e, 'Failed to fetch categories'));
     }
   }
 
   static Future getPostById(String newsId) async {}
+
+  static String _extractErrorMessage(DioException e, String fallback) {
+    final data = e.response?.data;
+    if (data is String) return data;
+    if (data is Map && data['message'] is String) return data['message'] as String;
+    return e.message ?? fallback;
+  }
 }

@@ -85,9 +85,7 @@ class NewsDetailController extends GetxController {
     try {
       isLoadingRelated.value = true;
 
-      final categoryId = currentNews.category is String
-          ? currentNews.category
-          : currentNews.category?.id;
+      final categoryId = currentNews.category;
 
       if (categoryId == null) return;
 

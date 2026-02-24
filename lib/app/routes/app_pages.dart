@@ -37,6 +37,10 @@ import '../modules/settings/views/settings_view.dart';
 import '../modules/splash/bindings/splash_binding.dart';
 import '../modules/splash/views/splash_view.dart';
 import '../modules/story/views/story_view.dart';
+import '../modules/call/bindings/call_binding.dart';
+import '../modules/call/views/call_view.dart';
+import '../modules/call/views/video_call_view.dart';
+import '../modules/call/views/incoming_call_view.dart';
 
 part 'app_routes.dart';
 
@@ -152,6 +156,24 @@ class AppPages {
     GetPage(
       name: _Paths.STORY_VIEW,
       page: () => const StoryView(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage(
+      name: _Paths.CALL,
+      page: () => const CallView(),
+      binding: CallBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage(
+      name: _Paths.VIDEO_CALL,
+      page: () => const VideoCallView(),
+      binding: CallBinding(),
+      middlewares: [AuthMiddleware()],
+    ),
+    GetPage(
+      name: _Paths.INCOMING_CALL,
+      page: () => const IncomingCallView(),
+      binding: CallBinding(),
       middlewares: [AuthMiddleware()],
     ),
   ];

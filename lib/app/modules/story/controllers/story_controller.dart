@@ -1,9 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../data/models/story_model.dart';
 import '../../../data/services/story_service.dart';
+
+enum StoryMediaType { image, video }
 
 class StoryController extends GetxController {
   final StoryService _storyService = StoryService();
@@ -35,12 +38,23 @@ class StoryController extends GetxController {
 
   Future<void> pickAndPostStory() async {
     try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 70,
-      );
+      final StoryMediaType? mediaType = await _showMediaTypePicker();
+      if (mediaType == null) return;
 
-      if (image == null) return;
+      XFile? media;
+      if (mediaType == StoryMediaType.video) {
+        media = await _picker.pickVideo(
+          source: ImageSource.gallery,
+          maxDuration: const Duration(minutes: 2),
+        );
+      } else {
+        media = await _picker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 70,
+        );
+      }
+
+      if (media == null) return;
 
       // Ask for caption (Optional but good UX)
       final caption = await _showCaptionDialog();
@@ -48,7 +62,8 @@ class StoryController extends GetxController {
       isPosting.value = true;
 
       final newStory = await _storyService.createStory(
-        imageFile: File(image.path),
+        mediaFile: File(media.path),
+        isVideo: mediaType == StoryMediaType.video,
         caption: caption ?? '',
       );
 
@@ -62,9 +77,16 @@ class StoryController extends GetxController {
         colorText: Colors.white,
       );
     } catch (e) {
+      String msg = 'Failed to post story';
+      if (e is DioException) {
+        msg = e.response?.data?['message'] ?? e.message ?? msg;
+      } else {
+        msg = e.toString();
+      }
+      error.value = msg;
       Get.snackbar(
         'Error',
-        'Failed to post story: $e',
+        msg,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.redAccent,
         colorText: Colors.white,
@@ -72,6 +94,36 @@ class StoryController extends GetxController {
     } finally {
       isPosting.value = false;
     }
+  }
+
+  Future<StoryMediaType?> _showMediaTypePicker() async {
+    return await Get.bottomSheet<StoryMediaType>(
+      SafeArea(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: Get.theme.scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.image_outlined),
+                title: const Text('Photo story'),
+                onTap: () => Get.back(result: StoryMediaType.image),
+              ),
+              ListTile(
+                leading: const Icon(Icons.videocam_outlined),
+                title: const Text('Video story'),
+                onTap: () => Get.back(result: StoryMediaType.video),
+              ),
+            ],
+          ),
+        ),
+      ),
+      isDismissible: true,
+    );
   }
 
   Future<String?> _showCaptionDialog() async {

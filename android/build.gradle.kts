@@ -36,9 +36,34 @@ subprojects {
     project.layout.buildDirectory.set(newBuildDir.dir(project.name))
 }
 
-// Ensure app is evaluated first
+// ✅ Harmonize Java version to 17 across all projects and tasks
 subprojects {
-    project.evaluationDependsOn(":app")
+    val syncJavaVersion = Action<Project> {
+        tasks.withType<JavaCompile>().configureEach {
+            sourceCompatibility = "17"
+            targetCompatibility = "17"
+            options.compilerArgs.addAll(listOf("-Xlint:-deprecation", "-Xlint:-unchecked"))
+        }
+        tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+            kotlinOptions {
+                jvmTarget = "17"
+            }
+        }
+        // Force it in the android extension if present
+        plugins.withType<com.android.build.gradle.BasePlugin> {
+            val android = project.extensions.getByType(com.android.build.gradle.BaseExtension::class.java)
+            android.compileOptions {
+                sourceCompatibility = JavaVersion.VERSION_17
+                targetCompatibility = JavaVersion.VERSION_17
+            }
+        }
+    }
+
+    if (project.state.executed) {
+        syncJavaVersion.execute(project)
+    } else {
+        project.afterEvaluate(syncJavaVersion)
+    }
 }
 
 // ❌ REMOVE Kotlin toolchain forcing for plugins

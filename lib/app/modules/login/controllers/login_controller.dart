@@ -5,7 +5,6 @@ import '../../../data/services/auth_service.dart';
 import '../../auth/controllers/auth_controller.dart';
 
 class LoginController extends GetxController {
-  final formKey = GlobalKey<FormState>();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
@@ -35,37 +34,35 @@ class LoginController extends GetxController {
   }
 
   void login() async {
-    if (formKey.currentState!.validate()) {
-      try {
-        isLoading(true);
-        final response = await AuthService.login(
-          emailController.text,
-          passwordController.text,
-          role: selectedRole.value,
-        );
+    try {
+      isLoading(true);
+      final response = await AuthService.login(
+        emailController.text,
+        passwordController.text,
+        role: selectedRole.value,
+      );
 
-        await _handleLoginResponse(response);
-      } on dio.DioException catch (e) {
-        final errorMsg =
-            e.response?.data?['message'] ?? 'Login failed. Please try again.';
-        Get.snackbar(
-          'Error',
-          errorMsg,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.redAccent,
-          colorText: Colors.white,
-        );
-      } catch (e) {
-        Get.snackbar(
-          'Error',
-          e.toString().replaceAll('Exception: ', ''),
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.redAccent,
-          colorText: Colors.white,
-        );
-      } finally {
-        isLoading(false);
-      }
+      await _handleLoginResponse(response);
+    } on dio.DioException catch (e) {
+      final errorMsg =
+          e.response?.data?['message'] ?? 'Login failed. Please try again.';
+      Get.snackbar(
+        'Error',
+        errorMsg,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        e.toString().replaceAll('Exception: ', ''),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading(false);
     }
   }
 

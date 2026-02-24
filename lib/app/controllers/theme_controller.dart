@@ -3,7 +3,12 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeController extends GetxController {
-  static ThemeController get to => Get.find<ThemeController>();
+  static ThemeController get to {
+    if (Get.isRegistered<ThemeController>()) {
+      return Get.find<ThemeController>();
+    }
+    return Get.put(ThemeController(), permanent: true);
+  }
 
   static const _darkModeKey = 'isDarkMode';
 
@@ -26,7 +31,7 @@ class ThemeController extends GetxController {
       _isDarkMode.value = _prefs!.getBool(_darkModeKey) ?? false;
       _applyTheme();
     } catch (e) {
-      debugPrint('⚠️ Failed to load theme: $e');
+      debugPrint('Failed to load theme: $e');
     }
   }
 
@@ -51,7 +56,7 @@ class ThemeController extends GetxController {
       _prefs ??= await SharedPreferences.getInstance();
       await _prefs!.setBool(_darkModeKey, _isDarkMode.value);
     } catch (e) {
-      debugPrint('⚠️ Failed to save theme: $e');
+      debugPrint('Failed to save theme: $e');
     }
   }
 

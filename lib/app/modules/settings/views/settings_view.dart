@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
+import '../../../controllers/theme_controller.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final themeController = ThemeController.to;
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: _buildAppBar(),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: _buildAppBar(context),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Column(
@@ -93,11 +97,13 @@ class SettingsView extends StatelessWidget {
                   icon: Iconsax.moon,
                   title: 'Dark Mode',
                   subtitle: 'Switch between light and dark theme',
-                  onTap: () => Get.toNamed('/theme'),
-                  trailing: Switch(
-                    value: false,
-                    onChanged: (value) {},
-                    activeColor: Colors.orange,
+                  onTap: themeController.toggleDarkMode,
+                  trailing: Obx(
+                    () => Switch(
+                      value: themeController.isDarkMode,
+                      onChanged: themeController.setDarkMode,
+                      activeColor: Colors.orange,
+                    ),
                   ),
                 ),
                 _buildSettingItem(
@@ -213,31 +219,34 @@ class SettingsView extends StatelessWidget {
     );
   }
 
-  AppBar _buildAppBar() {
+  AppBar _buildAppBar(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.appBarTheme.backgroundColor ?? theme.cardColor,
       elevation: 0,
       leading: IconButton(
         onPressed: () => Get.back(),
         icon: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: isDark ? Colors.grey[850] : Colors.grey[100],
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.arrow_back_ios_rounded,
             size: 20,
-            color: Colors.black87,
+            color: isDark ? Colors.white : Colors.black87,
           ),
         ),
       ),
-      title: const Text(
+      title: Text(
         'Settings',
         style: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w800,
-          color: Colors.black87,
+          color: isDark ? Colors.white : Colors.black87,
         ),
       ),
       centerTitle: false,
@@ -249,13 +258,13 @@ class SettingsView extends StatelessWidget {
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: isDark ? Colors.grey[850] : Colors.grey[100],
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
+            child: Icon(
               Iconsax.search_normal,
               size: 22,
-              color: Colors.black87,
+              color: isDark ? Colors.white : Colors.black87,
             ),
           ),
         ),
@@ -271,10 +280,7 @@ class SettingsView extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.blue.shade600,
-            Colors.purple.shade500,
-          ],
+          colors: [Colors.blue.shade600, Colors.purple.shade500],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -292,10 +298,7 @@ class SettingsView extends StatelessWidget {
             height: 70,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white,
-                width: 3,
-              ),
+              border: Border.all(color: Colors.white, width: 3),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
@@ -394,14 +397,17 @@ class SettingsView extends StatelessWidget {
     required Color color,
     required List<Widget> children,
   }) {
+    final theme = Get.theme;
+    final isDark = Get.isDarkMode;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.25 : 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -420,11 +426,7 @@ class SettingsView extends StatelessWidget {
                     color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    icon,
-                    size: 20,
-                    color: color,
-                  ),
+                  child: Icon(icon, size: 20, color: color),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -432,7 +434,7 @@ class SettingsView extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: Colors.grey[800],
+                    color: isDark ? Colors.white : Colors.grey[800],
                   ),
                 ),
               ],
@@ -451,13 +453,16 @@ class SettingsView extends StatelessWidget {
     required VoidCallback onTap,
     Widget? trailing,
   }) {
+    final theme = Get.theme;
+    final isDark = Get.isDarkMode;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        splashColor: Colors.blue.withOpacity(0.1),
-        highlightColor: Colors.blue.withOpacity(0.05),
+        splashColor: theme.colorScheme.primary.withOpacity(0.1),
+        highlightColor: theme.colorScheme.primary.withOpacity(0.05),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Row(
@@ -466,13 +471,13 @@ class SettingsView extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: isDark ? Colors.grey[850] : Colors.grey[100],
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   icon,
                   size: 20,
-                  color: Colors.grey[700],
+                  color: isDark ? Colors.grey[300] : Colors.grey[700],
                 ),
               ),
               const SizedBox(width: 16),
@@ -482,10 +487,10 @@ class SettingsView extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        color: isDark ? Colors.white : Colors.black87,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -493,17 +498,18 @@ class SettingsView extends StatelessWidget {
                       subtitle,
                       style: TextStyle(
                         fontSize: 13,
-                        color: Colors.grey[500],
+                        color: isDark ? Colors.grey[400] : Colors.grey[500],
                       ),
                     ),
                   ],
                 ),
               ),
-              trailing ?? const Icon(
-                Icons.chevron_right,
-                size: 22,
-                color: Colors.grey,
-              ),
+              trailing ??
+                  Icon(
+                    Icons.chevron_right,
+                    size: 22,
+                    color: isDark ? Colors.grey[400] : Colors.grey,
+                  ),
             ],
           ),
         ),
@@ -532,10 +538,12 @@ class SettingsView extends StatelessWidget {
   }
 
   Widget _buildLogoutButton() {
+    final isDark = Get.isDarkMode;
+
     return Container(
       margin: const EdgeInsets.all(20),
       child: Material(
-        color: Colors.white,
+        color: Get.theme.cardColor,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: () {
@@ -548,7 +556,9 @@ class SettingsView extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               border: Border.all(
-                color: Colors.grey[200]!,
+                color: isDark
+                    ? (Colors.grey[800] ?? Colors.grey)
+                    : (Colors.grey[200] ?? Colors.grey),
                 width: 1,
               ),
               borderRadius: BorderRadius.circular(16),
@@ -556,11 +566,7 @@ class SettingsView extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Iconsax.logout,
-                  size: 22,
-                  color: Colors.red,
-                ),
+                Icon(Iconsax.logout, size: 22, color: Colors.red),
                 const SizedBox(width: 12),
                 Text(
                   'Log Out',
@@ -581,9 +587,7 @@ class SettingsView extends StatelessWidget {
   void _showLogoutConfirmation() {
     Get.dialog(
       AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
             Container(
@@ -592,28 +596,18 @@ class SettingsView extends StatelessWidget {
                 color: Colors.red.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
-                Iconsax.logout,
-                size: 24,
-                color: Colors.red,
-              ),
+              child: const Icon(Iconsax.logout, size: 24, color: Colors.red),
             ),
             const SizedBox(width: 16),
             const Text(
               'Log Out',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
             ),
           ],
         ),
         content: const Text(
           'Are you sure you want to log out? You will need to sign in again to access your account.',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey,
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.grey),
         ),
         actions: [
           TextButton(
@@ -647,13 +641,18 @@ class SettingsView extends StatelessWidget {
 }
 
 // Optional: Quick Settings Grid (Alternative Layout)
+// ignore: unused_element
 class _QuickSettingsGrid extends StatelessWidget {
   const _QuickSettingsGrid();
 
   @override
   Widget build(BuildContext context) {
     const quickSettings = [
-      {'icon': Iconsax.notification, 'label': 'Notifications', 'color': Colors.purple},
+      {
+        'icon': Iconsax.notification,
+        'label': 'Notifications',
+        'color': Colors.purple,
+      },
       {'icon': Iconsax.security, 'label': 'Privacy', 'color': Colors.red},
       {'icon': Iconsax.moon, 'label': 'Theme', 'color': Colors.orange},
       {'icon': Iconsax.global, 'label': 'Language', 'color': Colors.blue},
@@ -673,6 +672,7 @@ class _QuickSettingsGrid extends StatelessWidget {
       itemCount: quickSettings.length,
       itemBuilder: (context, index) {
         final setting = quickSettings[index];
+        final color = (setting['color'] as Color?) ?? Colors.grey;
         return Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -690,8 +690,8 @@ class _QuickSettingsGrid extends StatelessWidget {
             child: InkWell(
               onTap: () {},
               borderRadius: BorderRadius.circular(16),
-              splashColor: setting['color']!.withOpacity(0.1),
-              highlightColor: setting['color']!.withOpacity(0.05),
+              splashColor: color.withOpacity(0.1),
+              highlightColor: color.withOpacity(0.05),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -701,13 +701,13 @@ class _QuickSettingsGrid extends StatelessWidget {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: setting['color']!.withOpacity(0.1),
+                        color: color.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         setting['icon'] as IconData,
                         size: 24,
-                        color: setting['color'] as Color,
+                        color: color,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -729,8 +729,4 @@ class _QuickSettingsGrid extends StatelessWidget {
       },
     );
   }
-}
-
-extension on Object {
-  Color? withOpacity(double d) {}
 }

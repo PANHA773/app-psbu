@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:university_news_app/app/modules/add-friend/views/add_friend_view.dart';
 import 'package:university_news_app/app/modules/profile/views/profile_view.dart';
 import 'package:university_news_app/app/modules/auth/controllers/auth_controller.dart';
 import 'package:university_news_app/app/config.dart';
@@ -10,15 +11,11 @@ import 'package:university_news_app/app/config.dart';
 import '../../../../core/app_colors.dart';
 import '../../../data/models/news_model.dart';
 import '../../../data/models/video/views/video_player_screen.dart';
-import '../../about/views/about_view.dart';
 import '../../goods/views/goods_view.dart';
 import '../../post/views/post_view.dart';
 import '../../my-posts/views/my_posts_view.dart';
 import '../controllers/home_controller.dart';
 import '../../story/controllers/story_controller.dart';
-import '../../../data/models/story_model.dart';
-
-import '../../category/views/category_view.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
@@ -26,17 +23,18 @@ class HomeView extends GetView<HomeController> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final List<Widget> tabs = [
       _buildNewsTab(),
-      const CategoryView(),
-      PostView(),
       const GoodsView(),
+      PostView(),
+      const AddFriendView(),
       const MyPostsView(),
       ProfileView(),
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Obx(
         () =>
             IndexedStack(index: controller.selectedIndex.value, children: tabs),
@@ -47,54 +45,66 @@ class HomeView extends GetView<HomeController> {
 
   // ===================== BOTTOM NAVIGATION BAR =====================
   Widget _buildBottomNavBar() {
-    return Obx(
-      () => Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
+    return Obx(() {
+      final isDark = Get.isDarkMode;
+      return SafeArea(
+        top: false,
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            color: Get.theme.cardColor,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+              width: 1,
             ),
-          ],
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.18 : 0.06),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(child: _buildNavItem(Iconsax.home_2, 'Home', 0)),
-              Expanded(
-                child: _buildNavItem(Iconsax.category_2, 'Categories', 1),
-              ),
-              Expanded(child: _buildNavItem(Iconsax.add_circle, 'Post', 2)),
-              Expanded(child: _buildNavItem(Iconsax.shop, 'Goods', 3)),
+              Expanded(child: _buildNavItem(Iconsax.shop, 'Favorite', 1)),
+              // Expanded(child: _buildNavItem(Iconsax.add_circle, 'Post', 2)),
+              Expanded(child: _buildNavItem(Iconsax.people, 'Add Friend', 3)),
               Expanded(child: _buildNavItem(Iconsax.document, 'My Posts', 4)),
-              // Expanded(child: _buildNavItem(Iconsax.profile_circle, 'Profile', 5)),
             ],
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildNavItem(IconData icon, String label, int index) {
-    bool isActive = controller.selectedIndex.value == index;
+    final bool isActive = controller.selectedIndex.value == index;
+    final bool isDark = Get.isDarkMode;
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () => controller.changeTab(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive
-              ? AppColors.primary.withOpacity(0.1)
-              : Colors.transparent,
+          gradient: isActive
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primary.withOpacity(isDark ? 0.25 : 0.16),
+                    Colors.orange.withOpacity(isDark ? 0.2 : 0.1),
+                  ],
+                )
+              : null,
+          color: isActive ? null : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -103,7 +113,9 @@ class HomeView extends GetView<HomeController> {
             Icon(
               icon,
               size: 22,
-              color: isActive ? AppColors.primary : Colors.grey[600],
+              color: isActive
+                  ? AppColors.primary
+                  : (isDark ? Colors.grey[300] : Colors.grey[600]),
             ),
             const SizedBox(height: 4),
             Text(
@@ -111,9 +123,11 @@ class HomeView extends GetView<HomeController> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: isActive ? AppColors.primary : Colors.grey[600],
+                color: isActive
+                    ? AppColors.primary
+                    : (isDark ? Colors.grey[300] : Colors.grey[600]),
                 fontSize: 11,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
           ],
@@ -128,7 +142,7 @@ class HomeView extends GetView<HomeController> {
       () => RefreshIndicator(
         onRefresh: controller.refreshPosts,
         color: AppColors.primary,
-        backgroundColor: Colors.white,
+        backgroundColor: Get.theme.scaffoldBackgroundColor,
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
@@ -207,19 +221,59 @@ class HomeView extends GetView<HomeController> {
   Widget _buildFeaturedSlider() {
     // Get featured news (first 5 items or any logic you want)
     final featuredNews = controller.newsList.take(5).toList();
+    final isDark = Get.isDarkMode;
 
     if (featuredNews.isEmpty) {
       return const SizedBox.shrink();
     }
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              Container(
+                width: 5,
+                height: 22,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(3),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF9800), Color(0xFFFF5722)],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Featured Spotlight',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              const Spacer(),
+              Obx(
+                () => Text(
+                  '${controller.currentSliderIndex.value + 1}/${featuredNews.take(3).length}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
         CarouselSlider(
           options: CarouselOptions(
-            height: 200,
+            height: 210,
             aspectRatio: 16 / 9,
-            viewportFraction: 0.9,
+            viewportFraction: 0.88,
             initialPage: 0,
             enableInfiniteScroll: true,
             reverse: false,
@@ -228,7 +282,7 @@ class HomeView extends GetView<HomeController> {
             autoPlayAnimationDuration: const Duration(milliseconds: 800),
             autoPlayCurve: Curves.fastOutSlowIn,
             enlargeCenterPage: true,
-            enlargeFactor: 0.3,
+            enlargeFactor: 0.22,
             scrollDirection: Axis.horizontal,
             onPageChanged: (index, reason) {
               controller.currentSliderIndex.value = index;
@@ -238,30 +292,32 @@ class HomeView extends GetView<HomeController> {
             return _buildSliderItem(news);
           }).toList(),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         // Dots Indicator
         Obx(() {
           final sliderItems = featuredNews.take(3).toList();
           return Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: sliderItems.asMap().entries.map((entry) {
-              return Container(
+              final isActive = controller.currentSliderIndex.value == entry.key;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
                 width: controller.currentSliderIndex.value == entry.key
-                    ? 20
+                    ? 22
                     : 8,
                 height: 8,
                 margin: const EdgeInsets.symmetric(horizontal: 2),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
-                  color: controller.currentSliderIndex.value == entry.key
+                  color: isActive
                       ? AppColors.primary
-                      : AppColors.primary.withOpacity(0.4),
+                      : (isDark ? Colors.grey[700] : Colors.grey[300]),
                 ),
               );
             }).toList(),
           );
         }),
-        const SizedBox(height: 24),
+        const SizedBox(height: 22),
       ],
     );
   }
@@ -380,20 +436,23 @@ class HomeView extends GetView<HomeController> {
                             height: 28,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              image: DecorationImage(
-                                image: CachedNetworkImageProvider(
-                                  news.authorAvatar!,
-                                ),
-                                fit: BoxFit.cover,
-                                onError: (exception, stackTrace) {
-                                  debugPrint(
-                                    '❌ Slider avatar error: $exception',
-                                  );
-                                },
-                              ),
                               border: Border.all(
                                 color: Colors.white,
                                 width: 1.5,
+                              ),
+                            ),
+                            child: ClipOval(
+                              child: CachedNetworkImage(
+                                imageUrl: news.authorAvatar!,
+                                fit: BoxFit.cover,
+                                errorWidget: (context, url, error) => Container(
+                                  color: Colors.white24,
+                                  child: const Icon(
+                                    Iconsax.user,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -502,21 +561,56 @@ class HomeView extends GetView<HomeController> {
 
   // ===================== APP BAR =====================
   SliverAppBar _buildAppBar() {
+    final isDark = Get.isDarkMode;
+
     return SliverAppBar(
-      expandedHeight: 200,
+      expandedHeight: 250,
       floating: false,
       pinned: true,
       snap: false,
       elevation: 0,
-      backgroundColor: Colors.white,
-
+      backgroundColor: Get.theme.scaffoldBackgroundColor,
+      surfaceTintColor: Colors.transparent,
+      centerTitle: false,
+      titleSpacing: 20,
+      title: ShaderMask(
+        shaderCallback: (bounds) => LinearGradient(
+          colors: [AppColors.primary, Colors.orange, Colors.red],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ).createShader(bounds),
+        child: const Text(
+          'news app',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.2,
+          ),
+        ),
+      ),
       actions: [
+        _buildHeaderAction(
+          icon: Iconsax.notification,
+          onTap: () => Get.toNamed('/notifications'),
+        ),
+        _buildHeaderAction(
+          icon: Iconsax.message,
+          onTap: () => Get.toNamed('/chat'),
+        ),
+        _buildHeaderAction(
+          icon: Iconsax.info_circle,
+          onTap: () => Get.toNamed('/about'),
+        ),
         Padding(
-          padding: const EdgeInsets.only(top: 16, right: 10),
+          padding: const EdgeInsets.only(right: 14),
           child: GestureDetector(
             onTap: () => Get.toNamed('/profile'),
             child: Obx(() {
               final user = Get.find<AuthController>().user.value;
+              final backgroundColor = isDark
+                  ? Colors.grey[850]!
+                  : Colors.grey[100]!;
               if (user != null &&
                   user.avatar != null &&
                   user.avatar!.isNotEmpty) {
@@ -526,130 +620,166 @@ class HomeView extends GetView<HomeController> {
                 } else {
                   avatarUrl = '${AppConfig.imageUrl}/$avatarUrl';
                 }
-                return CircleAvatar(
-                  radius: 20,
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
-                  backgroundImage: NetworkImage(avatarUrl),
-                  onBackgroundImageError: (e, s) =>
-                      debugPrint('❌ AppBar avatar error: $e'),
-                  // child: const Icon(
-                  //   Icons.person,
-                  //   color: AppColors.primary,
-                  //   size: 22,
-                  // ),
-                );
-              } else {
-                return CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Colors.grey[200],
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.black54,
-                    size: 22,
+                return Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: backgroundColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(2),
+                  child: CircleAvatar(
+                    backgroundImage: NetworkImage(avatarUrl),
+                    onBackgroundImageError: (e, s) =>
+                        debugPrint('AppBar avatar error: $e'),
                   ),
                 );
               }
+              return Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Iconsax.user,
+                  color: isDark ? Colors.grey[300] : Colors.black54,
+                  size: 20,
+                ),
+              );
             }),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(top: 16, right: 10),
-          child: CircleAvatar(
-            backgroundColor: Colors.grey[200],
-            radius: 20,
-            child: IconButton(
-              icon: const Icon(
-                Iconsax.notification,
-                color: Colors.black87,
-                size: 22,
-              ),
-              onPressed: () {
-                Get.toNamed('/notifications');
-              },
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(top: 16, right: 10),
-          child: CircleAvatar(
-            backgroundColor: Colors.grey[200],
-            radius: 20,
-            child: IconButton(
-              icon: const Icon(
-                Iconsax.message,
-                color: Colors.black87,
-                size: 22,
-              ),
-              onPressed: () {
-                Get.toNamed('/chat');
-              },
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(top: 16, right: 20),
-          child: CircleAvatar(
-            backgroundColor: Colors.grey[200],
-            radius: 20,
-            child: IconButton(
-              icon: const Icon(
-                Iconsax.info_circle,
-                color: Colors.black87,
-                size: 22,
-              ),
-              onPressed: () {
-                Get.toNamed('/about');
-              },
-            ),
-          ),
-        ),
       ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          padding: const EdgeInsets.fromLTRB(24, 50, 24, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ShaderMask(
-                    shaderCallback: (bounds) => LinearGradient(
-                      colors: [AppColors.primary, Colors.orange, Colors.red],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ).createShader(bounds),
-                    child: const Text(
-                      'News App',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -1,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _buildStoriesRow(),
-              const SizedBox(height: 12),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: Text(
-                  _getGreeting(),
-                  key: ValueKey(_getGreeting()),
-                  style: const TextStyle(
-                    color: Colors.black54,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.5,
-                  ),
+      flexibleSpace: LayoutBuilder(
+        builder: (context, constraints) {
+          // Prevent overflow while the SliverAppBar collapses.
+          final showExpandedContent = constraints.maxHeight > 205;
+          return FlexibleSpaceBar(
+            background: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    isDark ? const Color(0xFF1E1F24) : const Color(0xFFFFF7EF),
+                    isDark
+                        ? const Color(0xFF131418)
+                        : Get.theme.scaffoldBackgroundColor,
+                  ],
                 ),
               ),
-            ],
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 53, 20, 14),
+                  child: showExpandedContent
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFFFFA726),
+                                    Color(0xFFFF7043),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(22),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.orange.withOpacity(
+                                      isDark ? 0.22 : 0.3,
+                                    ),
+                                    blurRadius: 22,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _getGreeting(),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          'Explore trending posts and campus stories.',
+                                          style: TextStyle(
+                                            color: Colors.white.withOpacity(
+                                              0.92,
+                                            ),
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Iconsax.flash_1,
+                                      color: Colors.white,
+                                      size: 22,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            _buildStoriesRow(),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHeaderAction({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Get.isDarkMode;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: isDark ? Colors.grey[850] : Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            color: isDark ? Colors.white : Colors.black87,
+            size: 20,
           ),
         ),
       ),
@@ -658,15 +788,16 @@ class HomeView extends GetView<HomeController> {
 
   Widget _buildStoriesRow() {
     return Obx(() {
+      final isDark = Get.isDarkMode;
       final stories = storyController.stories;
       if (stories.isEmpty) {
         return const SizedBox.shrink();
       }
       return SizedBox(
-        height: 78,
+        height: 84,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          itemCount: stories.length + 1, // Add 1 for the 'Add Story' button
+          itemCount: stories.length + 1,
           separatorBuilder: (_, __) => const SizedBox(width: 12),
           itemBuilder: (context, index) {
             if (index == 0) {
@@ -676,20 +807,26 @@ class HomeView extends GetView<HomeController> {
                   GestureDetector(
                     onTap: () => storyController.pickAndPostStory(),
                     child: Container(
-                      padding: const EdgeInsets.all(2),
+                      padding: const EdgeInsets.all(2.5),
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.primary,
+                        gradient: LinearGradient(
+                          colors: [Color(0xFFFFA726), Color(0xFFFF7043)],
+                        ),
                       ),
                       child: Container(
-                        padding: const EdgeInsets.all(1),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF1E1F24)
+                              : Colors.white,
                           shape: BoxShape.circle,
                         ),
                         child: CircleAvatar(
                           radius: 23,
-                          backgroundColor: AppColors.primary.withOpacity(0.1),
+                          backgroundColor: isDark
+                              ? Colors.grey[850]
+                              : AppColors.primary.withOpacity(0.1),
                           child: const Icon(
                             Iconsax.add,
                             color: AppColors.primary,
@@ -700,10 +837,10 @@ class HomeView extends GetView<HomeController> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     'Add Story',
                     style: TextStyle(
-                      color: Colors.black87,
+                      color: isDark ? Colors.grey[300] : Colors.black87,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -721,8 +858,8 @@ class HomeView extends GetView<HomeController> {
                 GestureDetector(
                   onTap: () => Get.toNamed('/story-view', arguments: story),
                   child: Container(
-                    padding: const EdgeInsets.all(2), // reduced from 3 to 2
-                    decoration: BoxDecoration(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
                         colors: [
@@ -737,14 +874,16 @@ class HomeView extends GetView<HomeController> {
                       ),
                     ),
                     child: Container(
-                      padding: const EdgeInsets.all(1), // reduced from 2 to 1
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E1F24) : Colors.white,
                         shape: BoxShape.circle,
                       ),
                       child: CircleAvatar(
-                        radius: 23, // reduced from 24 to 23
-                        backgroundColor: AppColors.primary.withOpacity(0.1),
+                        radius: 23,
+                        backgroundColor: isDark
+                            ? Colors.grey[850]
+                            : AppColors.primary.withOpacity(0.1),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(23),
                           child: CachedNetworkImage(
@@ -777,8 +916,8 @@ class HomeView extends GetView<HomeController> {
                   width: 56,
                   child: Text(
                     user.name.isEmpty ? 'Unknown' : user.name,
-                    style: const TextStyle(
-                      color: Colors.black87,
+                    style: TextStyle(
+                      color: isDark ? Colors.grey[200] : Colors.black87,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -797,9 +936,9 @@ class HomeView extends GetView<HomeController> {
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning! ☀️';
-    if (hour < 17) return 'Good Afternoon! 🌤️';
-    return 'Good Evening! 🌙';
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
   }
 }
 
@@ -826,15 +965,22 @@ class _ModernNewsCardState extends State<ModernNewsCard> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: () => Get.toNamed('/news-detail', arguments: widget.news),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDark ? Colors.grey[850]! : Colors.grey[200]!,
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
               blurRadius: 20,
               offset: const Offset(0, 5),
             ),
@@ -855,7 +1001,7 @@ class _ModernNewsCardState extends State<ModernNewsCard> {
                   Container(
                     height: 180,
                     width: double.infinity,
-                    color: Colors.grey[100],
+                    color: isDark ? Colors.grey[850] : Colors.grey[100],
                     child: CachedNetworkImage(
                       imageUrl: widget.news.image ?? '',
                       fit: BoxFit.cover,
@@ -886,7 +1032,7 @@ class _ModernNewsCardState extends State<ModernNewsCard> {
                         child: GestureDetector(
                           onTap: () {
                             // Debug: Print video URL
-                            print(
+                            debugPrint(
                               '🎥 Opening video player with URL: ${widget.news.video}',
                             );
 
@@ -936,11 +1082,11 @@ class _ModernNewsCardState extends State<ModernNewsCard> {
                   // TITLE
                   Text(
                     widget.news.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
                       height: 1.4,
-                      color: Colors.black87,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -959,15 +1105,21 @@ class _ModernNewsCardState extends State<ModernNewsCard> {
                           height: 32,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            image: DecorationImage(
-                              image: CachedNetworkImageProvider(
-                                widget.news.authorAvatar!,
-                              ),
-                              fit: BoxFit.cover,
-                              onError: (e, s) =>
-                                  debugPrint('❌ NewsCard avatar error: $e'),
-                            ),
                             border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl: widget.news.authorAvatar!,
+                              fit: BoxFit.cover,
+                              errorWidget: (context, url, error) => Container(
+                                color: AppColors.primary.withOpacity(0.1),
+                                child: Icon(
+                                  Iconsax.user,
+                                  size: 16,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
                           ),
                         )
                       else
@@ -994,7 +1146,9 @@ class _ModernNewsCardState extends State<ModernNewsCard> {
                             Text(
                               widget.news.authorName,
                               style: TextStyle(
-                                color: Colors.grey[700],
+                                color: isDark
+                                    ? Colors.grey[300]
+                                    : Colors.grey[700],
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1021,7 +1175,7 @@ class _ModernNewsCardState extends State<ModernNewsCard> {
                   Text(
                     widget.news.content,
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
                       fontSize: 13,
                       height: 1.5,
                     ),
@@ -1035,7 +1189,10 @@ class _ModernNewsCardState extends State<ModernNewsCard> {
                   Container(
                     decoration: BoxDecoration(
                       border: Border(
-                        top: BorderSide(color: Colors.grey[200]!, width: 1),
+                        top: BorderSide(
+                          color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+                          width: 1,
+                        ),
                       ),
                     ),
                     padding: const EdgeInsets.only(top: 12),
@@ -1047,14 +1204,18 @@ class _ModernNewsCardState extends State<ModernNewsCard> {
                           children: [
                             Icon(
                               Iconsax.eye,
-                              color: Colors.grey[500],
+                              color: isDark
+                                  ? Colors.grey[400]
+                                  : Colors.grey[500],
                               size: 16,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               '${widget.news.views}',
                               style: TextStyle(
-                                color: Colors.grey[600],
+                                color: isDark
+                                    ? Colors.grey[300]
+                                    : Colors.grey[600],
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -1082,7 +1243,9 @@ class _ModernNewsCardState extends State<ModernNewsCard> {
                                 decoration: BoxDecoration(
                                   color: isLiked
                                       ? Colors.red.withOpacity(0.1)
-                                      : Colors.grey.withOpacity(0.1),
+                                      : (isDark
+                                            ? Colors.grey[800]
+                                            : Colors.grey.withOpacity(0.1)),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
@@ -1091,7 +1254,9 @@ class _ModernNewsCardState extends State<ModernNewsCard> {
                                       isLiked ? Iconsax.heart : Iconsax.heart,
                                       color: isLiked
                                           ? Colors.red
-                                          : Colors.grey[600],
+                                          : (isDark
+                                                ? Colors.grey[300]
+                                                : Colors.grey[600]),
                                       size: 18,
                                     ),
                                     const SizedBox(width: 6),
@@ -1100,7 +1265,9 @@ class _ModernNewsCardState extends State<ModernNewsCard> {
                                       style: TextStyle(
                                         color: isLiked
                                             ? Colors.red
-                                            : Colors.grey[600],
+                                            : (isDark
+                                                  ? Colors.grey[300]
+                                                  : Colors.grey[600]),
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -1125,14 +1292,18 @@ class _ModernNewsCardState extends State<ModernNewsCard> {
                                 decoration: BoxDecoration(
                                   color: isGood
                                       ? AppColors.primary.withOpacity(0.1)
-                                      : Colors.grey.withOpacity(0.1),
+                                      : (isDark
+                                            ? Colors.grey[800]
+                                            : Colors.grey.withOpacity(0.1)),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(
                                   isGood ? Iconsax.shop : Iconsax.shop,
                                   color: isGood
                                       ? AppColors.primary
-                                      : Colors.grey[600],
+                                      : (isDark
+                                            ? Colors.grey[300]
+                                            : Colors.grey[600]),
                                   size: 18,
                                 ),
                               ),
@@ -1149,12 +1320,16 @@ class _ModernNewsCardState extends State<ModernNewsCard> {
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.withOpacity(0.1),
+                                  color: isDark
+                                      ? Colors.grey[800]
+                                      : Colors.grey.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(
                                   Iconsax.share,
-                                  color: Colors.grey[600],
+                                  color: isDark
+                                      ? Colors.grey[300]
+                                      : Colors.grey[600],
                                   size: 18,
                                 ),
                               ),

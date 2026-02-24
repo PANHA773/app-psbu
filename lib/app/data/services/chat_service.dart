@@ -110,6 +110,33 @@ class ChatService {
     }
   }
 
+  Future<void> sendVoiceMessage(
+    String filePath, {
+    String? recipientId,
+    String content = '[Voice message]',
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'content': content,
+        if (recipientId != null) 'recipientId': recipientId,
+        'audio': await MultipartFile.fromFile(
+          filePath,
+          filename: 'voice_message.m4a',
+          contentType: DioMediaType.parse('audio/mp4'),
+        ),
+      });
+
+      await _dio.post('/chat', data: formData);
+    } on DioException catch (e) {
+      final errorMsg =
+          _extractErrorMessage(e.response?.data, fallback: e.message) ??
+          'Failed to send voice message';
+      throw Exception(errorMsg);
+    } catch (e) {
+      throw Exception('Unexpected error: $e');
+    }
+  }
+
   /// Safely extracts a list from a variety of common API shapes.
   List<dynamic> _extractList(
     dynamic raw, {
@@ -159,7 +186,9 @@ class ChatService {
 
   ChatSender _mapToSender(dynamic json) {
     if (json is Map<String, dynamic>) return ChatSender.fromJson(json);
-    if (json is Map) return ChatSender.fromJson(Map<String, dynamic>.from(json));
+    if (json is Map) {
+      return ChatSender.fromJson(Map<String, dynamic>.from(json));
+    }
     throw Exception('Invalid conversation item type: ${json.runtimeType}');
   }
 

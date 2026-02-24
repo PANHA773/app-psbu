@@ -9,7 +9,7 @@ class CommentService {
         '/news/$newsId/comments',
       );
 
-      final List rawData =
+      final dynamic rawData =
           response.data is Map && response.data.containsKey('data')
           ? response.data['data']
           : response.data;
@@ -79,10 +79,7 @@ class CommentService {
     }
   }
 
-  static Future<void> deleteComment(
-    String newsId,
-    String commentId,
-  ) async {
+  static Future<void> deleteComment(String newsId, String commentId) async {
     try {
       await DioClient.dio.delete('/news/$newsId/comments/$commentId');
     } on DioException catch (e) {
@@ -90,6 +87,56 @@ class CommentService {
           e.response?.data?['message'] ??
           e.message ??
           'Failed to delete comment';
+      throw Exception(errorMsg);
+    } catch (e) {
+      throw Exception('Unexpected error: $e');
+    }
+  }
+
+  static Future<List<CommentModel>> fetchStoryComments(String storyId) async {
+    try {
+      final Response response = await DioClient.dio.get(
+        '/stories/$storyId/comment',
+      );
+
+      final dynamic rawData =
+          response.data is Map && response.data.containsKey('data')
+          ? response.data['data']
+          : response.data;
+
+      if (rawData is! List) {
+        return <CommentModel>[];
+      }
+
+      return rawData.map((json) => CommentModel.fromJson(json)).toList();
+    } on DioException catch (e) {
+      final errorMsg =
+          e.response?.data?['message'] ?? e.message ?? 'Server error';
+      throw Exception(errorMsg);
+    } catch (e) {
+      throw Exception('Unexpected error: $e');
+    }
+  }
+
+  static Future<CommentModel> createStoryComment(
+    String storyId,
+    String content,
+  ) async {
+    try {
+      final Response response = await DioClient.dio.post(
+        '/stories/$storyId/comment',
+        data: {'content': content},
+      );
+
+      final Map<String, dynamic> rawData =
+          response.data is Map && response.data.containsKey('data')
+          ? response.data['data']
+          : response.data;
+
+      return CommentModel.fromJson(rawData);
+    } on DioException catch (e) {
+      final errorMsg =
+          e.response?.data?['message'] ?? e.message ?? 'Server error';
       throw Exception(errorMsg);
     } catch (e) {
       throw Exception('Unexpected error: $e');
