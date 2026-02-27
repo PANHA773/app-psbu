@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/services/auth_service.dart';
+import '../../../data/services/chat_alert_service.dart';
 
 class AuthController extends GetxController {
   RxBool isLoggedIn = false.obs;
@@ -20,9 +22,15 @@ class AuthController extends GetxController {
     if (AuthService.token != null) {
       isLoggedIn.value = true;
       await fetchUser();
+      if (Get.isRegistered<ChatAlertService>()) {
+        await Get.find<ChatAlertService>().refreshAuthState();
+      }
     } else {
       isLoggedIn.value = false;
       user.value = null;
+      if (Get.isRegistered<ChatAlertService>()) {
+        await Get.find<ChatAlertService>().stop();
+      }
     }
   }
 
@@ -33,7 +41,7 @@ class AuthController extends GetxController {
         user.value = UserModel.fromJson(userData);
       }
     } catch (e) {
-      print('Failed to fetch user: $e');
+      debugPrint('Failed to fetch user: $e');
     }
   }
 
@@ -49,6 +57,9 @@ class AuthController extends GetxController {
   }
 
   Future<void> logout() async {
+    if (Get.isRegistered<ChatAlertService>()) {
+      await Get.find<ChatAlertService>().stop();
+    }
     await AuthService.logout();
     isLoggedIn.value = false;
     user.value = null;

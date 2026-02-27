@@ -2,6 +2,7 @@ import 'package:dio/dio.dart' as dio;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart' hide Response;
 import '../../../data/services/auth_service.dart';
+import '../../../data/services/chat_alert_service.dart';
 import '../../auth/controllers/auth_controller.dart';
 
 class LoginController extends GetxController {
@@ -70,6 +71,9 @@ class LoginController extends GetxController {
     try {
       isLoading(true);
       await AuthService.loginAsGuest();
+      if (Get.isRegistered<ChatAlertService>()) {
+        await Get.find<ChatAlertService>().stop();
+      }
 
       // Navigate to home without token
       Get.offAllNamed('/home');

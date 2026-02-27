@@ -53,7 +53,9 @@ class ChatController extends GetxController {
   final RxInt pendingRecordingDuration = 0.obs;
   String? _recordingPath;
   Timer? _recordingTimer;
+  Timer? _conversationRealtimeTimer;
   bool _isStartingRecording = false;
+  bool _isFetchingConversation = false;
 
   List<ChatSender> get recentConversations {
     return conversations;
@@ -84,6 +86,20 @@ class ChatController extends GetxController {
     fetchConversationMessages(user.id);
   }
 
+  void startRealtimeUpdates(String userId) {
+    _conversationRealtimeTimer?.cancel();
+    _conversationRealtimeTimer = Timer.periodic(const Duration(seconds: 2), (
+      _,
+    ) {
+      fetchConversationMessages(userId, showLoader: false);
+    });
+  }
+
+  void stopRealtimeUpdates() {
+    _conversationRealtimeTimer?.cancel();
+    _conversationRealtimeTimer = null;
+  }
+
   void onDraftChanged(String value) {
     isTypingInConversation.value = value.trim().isNotEmpty;
   }
@@ -107,9 +123,14 @@ class ChatController extends GetxController {
     }
   }
 
-  Future<void> fetchConversationMessages(String userId) async {
+  Future<void> fetchConversationMessages(
+    String userId, {
+    bool showLoader = true,
+  }) async {
+    if (_isFetchingConversation) return;
     try {
-      isLoading.value = true;
+      _isFetchingConversation = true;
+      if (showLoader) isLoading.value = true;
       error.value = '';
       final fetchedMessages = await _chatService.getConversationMessages(
         userId,
@@ -119,7 +140,8 @@ class ChatController extends GetxController {
       print('ChatController Conversation Error: $e');
       error.value = 'Failed to load messages: $e';
     } finally {
-      isLoading.value = false;
+      if (showLoader) isLoading.value = false;
+      _isFetchingConversation = false;
     }
   }
 
@@ -284,6 +306,7 @@ class ChatController extends GetxController {
 
   @override
   void onClose() {
+    _conversationRealtimeTimer?.cancel();
     _audioRecorder.dispose();
     _recordingTimer?.cancel();
     super.onClose();

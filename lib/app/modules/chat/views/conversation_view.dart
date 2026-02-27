@@ -25,6 +25,10 @@ class _ConversationViewState extends State<ConversationView> {
   @override
   void initState() {
     super.initState();
+    final selectedUser = controller.selectedUser.value;
+    if (selectedUser != null) {
+      controller.startRealtimeUpdates(selectedUser.id);
+    }
     _messageFocusNode.addListener(() {
       if (_messageFocusNode.hasFocus) {
         _scrollToBottom(animated: true);
@@ -37,6 +41,7 @@ class _ConversationViewState extends State<ConversationView> {
 
   @override
   void dispose() {
+    controller.stopRealtimeUpdates();
     _messageWorker.dispose();
     _messageFocusNode.dispose();
     _scrollController.dispose();

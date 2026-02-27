@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/app_colors.dart';
 import '../../../data/models/about_model.dart';
@@ -132,6 +133,7 @@ class AboutView extends GetView<AboutController> {
                             ),
                           ),
                           isDark: isDark,
+                          onTap: () => _launchPhone(about.contact.phone),
                         ),
                         const SizedBox(height: 10),
                         _buildContactTile(
@@ -156,6 +158,8 @@ class AboutView extends GetView<AboutController> {
                             ),
                           ),
                           isDark: isDark,
+                          onTap: () =>
+                              _launchExternalLink(about.contact.website),
                         ),
                       ],
                     ),
@@ -203,7 +207,13 @@ class AboutView extends GetView<AboutController> {
                             spacing: 10,
                             runSpacing: 10,
                             children: about.socialLinks
-                                .map((link) => _buildSocialCard(link, isDark))
+                                .map(
+                                  (link) => _buildSocialCard(
+                                    link,
+                                    isDark,
+                                    onTap: () => _launchExternalLink(link.url),
+                                  ),
+                                )
                                 .toList(),
                           ),
                     isDark: isDark,
@@ -521,54 +531,81 @@ class AboutView extends GetView<AboutController> {
     );
   }
 
-  Widget _buildContactTile({required _ContactItem item, required bool isDark}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF24262E) : const Color(0xFFF6F7F9),
+  Widget _buildContactTile({
+    required _ContactItem item,
+    required bool isDark,
+    VoidCallback? onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(item.icon, size: 16, color: AppColors.primary),
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF24262E) : const Color(0xFFF6F7F9),
+            borderRadius: BorderRadius.circular(14),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.label,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
-                    fontWeight: FontWeight.w700,
-                  ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  item.value,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isDark ? Colors.grey[100] : Colors.black87,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Icon(item.icon, size: 16, color: AppColors.primary),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.label,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      item.value,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? Colors.grey[100] : Colors.black87,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
+  }
+
+  Future<void> _launchPhone(String phone) async {
+    final value = phone.trim();
+    if (value.isEmpty) {
+      Get.snackbar('Call', 'Phone number not available.');
+      return;
+    }
+
+    final uri = Uri(scheme: 'tel', path: value);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+      return;
+    }
+
+    Get.snackbar('Call', 'Unable to open dialer for this number.');
   }
 
   Widget _buildLeaderCard(Leader leader, bool isDark) {
@@ -644,53 +681,60 @@ class AboutView extends GetView<AboutController> {
     );
   }
 
-  Widget _buildSocialCard(SocialLink link, bool isDark) {
+  Widget _buildSocialCard(SocialLink link, bool isDark, {VoidCallback? onTap}) {
     final platform = _safeText(link.platform, fallback: 'Platform');
     final url = _safeText(link.url, fallback: 'URL not available');
     final color = _getSocialColor(platform.toLowerCase());
 
-    return Container(
-      constraints: const BoxConstraints(minWidth: 130),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.2 : 0.12),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minWidth: 130),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: isDark ? 0.2 : 0.12),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                _getSocialIcon(platform.toLowerCase()),
-                color: color,
-                size: 15,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _getSocialIcon(platform.toLowerCase()),
+                    color: color,
+                    size: 15,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    platform,
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 6),
+              const SizedBox(height: 4),
               Text(
-                platform,
+                url,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12.5,
+                  color: isDark ? Colors.grey[300] : Colors.grey[700],
+                  fontWeight: FontWeight.w500,
+                  fontSize: 11,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            url,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: isDark ? Colors.grey[300] : Colors.grey[700],
-              fontWeight: FontWeight.w500,
-              fontSize: 11,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -722,6 +766,8 @@ class AboutView extends GetView<AboutController> {
         return Iconsax.link;
       case 'youtube':
         return Iconsax.video_play;
+      case 'tiktok':
+        return Iconsax.music;
       case 'telegram':
         return Iconsax.send_2;
       default:
@@ -739,11 +785,39 @@ class AboutView extends GetView<AboutController> {
         return const Color(0xFF0A66C2);
       case 'youtube':
         return const Color(0xFFFF0000);
+      case 'tiktok':
+        return const Color(0xFF25F4EE);
       case 'telegram':
         return const Color(0xFF0088CC);
       default:
         return AppColors.primary;
     }
+  }
+
+  Future<void> _launchExternalLink(String rawUrl) async {
+    final value = rawUrl.trim();
+    if (value.isEmpty) {
+      Get.snackbar('Link', 'URL is not available.');
+      return;
+    }
+
+    final normalized =
+        value.startsWith('http://') || value.startsWith('https://')
+        ? value
+        : 'https://$value';
+
+    final uri = Uri.tryParse(normalized);
+    if (uri == null) {
+      Get.snackbar('Link', 'Invalid URL.');
+      return;
+    }
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return;
+    }
+
+    Get.snackbar('Link', 'Unable to open this link.');
   }
 }
 
