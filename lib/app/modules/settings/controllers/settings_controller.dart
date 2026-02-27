@@ -1,23 +1,21 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../controllers/language_controller.dart';
+
 class SettingsController extends GetxController {
-  //TODO: Implement SettingsController
-
-  final count = 0.obs;
-  @override
-  void onInit() {
-    super.onInit();
+  LanguageController get _languageController {
+    if (Get.isRegistered<LanguageController>()) {
+      return Get.find<LanguageController>();
+    }
+    return Get.put(LanguageController(), permanent: true);
   }
 
-  @override
-  void onReady() {
-    super.onReady();
-  }
+  Locale get currentLocale => _languageController.locale.value;
+  String get currentLanguageLabel => _languageController.currentLanguageLabel;
 
-  @override
-  void onClose() {
-    super.onClose();
+  Future<void> setLanguage(Locale locale) async {
+    await _languageController.setLanguage(locale);
+    update();
   }
-
-  void increment() => count.value++;
 }

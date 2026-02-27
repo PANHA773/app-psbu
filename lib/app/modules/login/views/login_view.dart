@@ -84,7 +84,7 @@ class LoginView extends GetView<LoginController> {
         ),
         const SizedBox(height: 26),
         Text(
-          'Welcome Back',
+          'login_welcome_back'.tr,
           style: TextStyle(
             fontSize: 33,
             fontWeight: FontWeight.w800,
@@ -94,7 +94,7 @@ class LoginView extends GetView<LoginController> {
         ),
         const SizedBox(height: 6),
         Text(
-          'Sign in to see campus updates and connect with your community.',
+          'login_subtitle'.tr,
           style: TextStyle(
             fontSize: 14.5,
             height: 1.4,
@@ -134,7 +134,7 @@ class LoginView extends GetView<LoginController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Login as',
+            'login_as'.tr,
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
@@ -147,13 +147,13 @@ class LoginView extends GetView<LoginController> {
           const SizedBox(height: 18),
           _buildTextFormField(
             controller: ctrl.emailController,
-            hintText: 'Email address',
+            hintText: 'email_address'.tr,
             prefixIcon: Iconsax.direct_right,
             keyboardType: TextInputType.emailAddress,
             isDark: isDark,
             validator: (value) {
               if (value == null || !GetUtils.isEmail(value)) {
-                return 'Please enter a valid email';
+                return 'please_enter_valid_email'.tr;
               }
               return null;
             },
@@ -161,13 +161,13 @@ class LoginView extends GetView<LoginController> {
           const SizedBox(height: 14),
           _buildTextFormField(
             controller: ctrl.passwordController,
-            hintText: 'Password',
+            hintText: 'password'.tr,
             prefixIcon: Iconsax.lock,
             isPassword: true,
             isDark: isDark,
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Please enter your password';
+                return 'please_enter_password'.tr;
               }
               return null;
             },
@@ -178,8 +178,8 @@ class LoginView extends GetView<LoginController> {
             child: TextButton(
               onPressed: () {
                 Get.snackbar(
-                  'Info',
-                  'Forgot password flow is not connected yet.',
+                  'info'.tr,
+                  'forgot_password_not_connected'.tr,
                   snackPosition: SnackPosition.BOTTOM,
                 );
               },
@@ -187,7 +187,7 @@ class LoginView extends GetView<LoginController> {
                 foregroundColor: isDark ? Colors.grey[300] : Colors.grey[700],
                 textStyle: const TextStyle(fontWeight: FontWeight.w600),
               ),
-              child: const Text('Forgot password?'),
+              child: Text('forgot_password'.tr),
             ),
           ),
           const SizedBox(height: 6),
@@ -222,8 +222,8 @@ class LoginView extends GetView<LoginController> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text(
-                        'Sign In',
+                    : Text(
+                        'sign_in'.tr,
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 15.5,
@@ -239,15 +239,15 @@ class LoginView extends GetView<LoginController> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'No account yet?',
+                'no_account_yet'.tr,
                 style: TextStyle(
                   color: isDark ? Colors.grey[400] : Colors.grey[700],
                 ),
               ),
               TextButton(
                 onPressed: () => Get.toNamed('/register'),
-                child: const Text(
-                  'Create one',
+                child: Text(
+                  'create_one'.tr,
                   style: TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w700,
@@ -305,7 +305,7 @@ class LoginView extends GetView<LoginController> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      role,
+                      _roleLabel(role),
                       style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
@@ -328,7 +328,7 @@ class LoginView extends GetView<LoginController> {
     return TextButton(
       onPressed: ctrl.isLoading.value ? null : () => ctrl.loginAsGuest(),
       child: Text(
-        'Continue as Guest',
+        'continue_as_guest'.tr,
         style: TextStyle(
           color: isDark ? Colors.grey[400] : Colors.grey[600],
           fontSize: 13.5,
@@ -406,7 +406,7 @@ class LoginView extends GetView<LoginController> {
             ),
             const SizedBox(width: 12),
             Text(
-              'Or continue with',
+              'or_continue_with'.tr,
               style: TextStyle(
                 color: isDark ? Colors.grey[500] : Colors.grey[600],
                 fontSize: 12.5,
@@ -430,8 +430,8 @@ class LoginView extends GetView<LoginController> {
               child: OutlinedButton.icon(
                 onPressed: () => _promptToken(
                   context,
-                  title: 'Google Sign-In',
-                  hint: 'Paste Google idToken',
+                  title: 'google_sign_in'.tr,
+                  hint: 'paste_google_token'.tr,
                   onSubmit: ctrl.loginWithGoogleToken,
                 ),
                 style: OutlinedButton.styleFrom(
@@ -468,8 +468,8 @@ class LoginView extends GetView<LoginController> {
               child: OutlinedButton.icon(
                 onPressed: () => _promptToken(
                   context,
-                  title: 'Facebook Sign-In',
-                  hint: 'Paste Facebook accessToken',
+                  title: 'facebook_sign_in'.tr,
+                  hint: 'paste_facebook_token'.tr,
                   onSubmit: ctrl.loginWithFacebookToken,
                 ),
                 style: OutlinedButton.styleFrom(
@@ -530,17 +530,23 @@ class LoginView extends GetView<LoginController> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+            child: Text('cancel'.tr),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(ctx).pop();
               onSubmit(tokenController.text);
             },
-            child: const Text('Continue'),
+            child: Text('continue_text'.tr),
           ),
         ],
       ),
     );
+  }
+
+  String _roleLabel(String role) {
+    if (role == 'Student') return 'student'.tr;
+    if (role == 'Teacher') return 'teacher'.tr;
+    return role;
   }
 }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
+import '../../../controllers/language_controller.dart';
 import '../../../controllers/theme_controller.dart';
+import '../controllers/settings_controller.dart';
 
-class SettingsView extends StatelessWidget {
+class SettingsView extends GetView<SettingsController> {
   const SettingsView({super.key});
 
   @override
@@ -42,9 +44,9 @@ class SettingsView extends StatelessWidget {
                 ),
                 _buildSettingItem(
                   icon: Iconsax.global,
-                  title: 'Language',
-                  subtitle: 'English (US)',
-                  onTap: () => Get.toNamed('/language'),
+                  title: 'language'.tr,
+                  subtitle: controller.currentLanguageLabel,
+                  onTap: _showLanguagePicker,
                   trailing: const Icon(Icons.chevron_right),
                 ),
               ],
@@ -242,7 +244,7 @@ class SettingsView extends StatelessWidget {
         ),
       ),
       title: Text(
-        'Settings',
+        'settings'.tr,
         style: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w800,
@@ -569,7 +571,7 @@ class SettingsView extends StatelessWidget {
                 Icon(Iconsax.logout, size: 22, color: Colors.red),
                 const SizedBox(width: 12),
                 Text(
-                  'Log Out',
+                  'log_out'.tr,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -599,14 +601,14 @@ class SettingsView extends StatelessWidget {
               child: const Icon(Iconsax.logout, size: 24, color: Colors.red),
             ),
             const SizedBox(width: 16),
-            const Text(
-              'Log Out',
+            Text(
+              'confirm_logout_title'.tr,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
             ),
           ],
         ),
-        content: const Text(
-          'Are you sure you want to log out? You will need to sign in again to access your account.',
+        content: Text(
+          'confirm_logout_content'.tr,
           style: TextStyle(fontSize: 14, color: Colors.grey),
         ),
         actions: [
@@ -616,7 +618,7 @@ class SettingsView extends StatelessWidget {
               foregroundColor: Colors.grey,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: const Text('Cancel'),
+            child: Text('cancel'.tr),
           ),
           ElevatedButton(
             onPressed: () {
@@ -632,9 +634,122 @@ class SettingsView extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('Log Out'),
+            child: Text('log_out'.tr),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showLanguagePicker() {
+    final isDark = Get.isDarkMode;
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.fromLTRB(18, 14, 18, 22),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF17181D) : Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(22),
+            topRight: Radius.circular(22),
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: GetBuilder<SettingsController>(
+            builder: (c) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.grey[700] : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                  Text(
+                    'select_language'.tr,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _languageOption(
+                    label: 'english_us'.tr,
+                    selected:
+                        c.currentLocale.languageCode ==
+                        LanguageController.englishLocale.languageCode,
+                    onTap: () async {
+                      await c.setLanguage(LanguageController.englishLocale);
+                      Get.back();
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  _languageOption(
+                    label: 'khmer'.tr,
+                    selected:
+                        c.currentLocale.languageCode ==
+                        LanguageController.khmerLocale.languageCode,
+                    onTap: () async {
+                      await c.setLanguage(LanguageController.khmerLocale);
+                      Get.back();
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _languageOption({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Get.isDarkMode;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF24262E) : const Color(0xFFF6F7F9),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected
+                  ? Colors.orange
+                  : (isDark
+                        ? const Color(0xFF2F323B)
+                        : const Color(0xFFE7EBF1)),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+              if (selected)
+                const Icon(Icons.check_circle, color: Colors.orange, size: 20),
+            ],
+          ),
+        ),
       ),
     );
   }

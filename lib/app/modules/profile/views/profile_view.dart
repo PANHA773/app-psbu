@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../../core/app_colors.dart';
 import '../../../config.dart';
+import '../../../controllers/language_controller.dart';
 import '../../../controllers/theme_controller.dart';
 import '../../../data/models/user_model.dart';
 import '../../../routes/app_pages.dart';
@@ -15,6 +16,13 @@ class ProfileView extends StatelessWidget {
   final AuthController _authController = Get.find<AuthController>();
   final ProfileController _profileController = Get.find<ProfileController>();
   final ThemeController _themeController = ThemeController.to;
+
+  LanguageController get _languageController {
+    if (Get.isRegistered<LanguageController>()) {
+      return Get.find<LanguageController>();
+    }
+    return Get.put(LanguageController(), permanent: true);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +69,7 @@ class ProfileView extends StatelessWidget {
                     context,
                     icon: Iconsax.global,
                     title: 'Language',
-                    value: user.settings.language,
+                    value: _languageController.currentLanguageLabel,
                   ),
                   if ((user.gender ?? '').trim().isNotEmpty)
                     _buildInfoTile(
@@ -85,6 +93,15 @@ class ProfileView extends StatelessWidget {
                 title: 'Preferences',
                 icon: Iconsax.setting,
                 children: [
+                  Obx(
+                    () => _buildActionTile(
+                      context,
+                      icon: Iconsax.global,
+                      title: 'Language',
+                      subtitle: _languageController.currentLanguageLabel,
+                      onTap: () => _showLanguagePicker(context),
+                    ),
+                  ),
                   Obx(
                     () => _buildToggleTile(
                       context,
@@ -367,11 +384,13 @@ class ProfileView extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildStatCard(
-            icon: Iconsax.global,
-            title: 'Language',
-            value: user.settings.language,
-            color: Colors.green,
+          child: Obx(
+            () => _buildStatCard(
+              icon: Iconsax.global,
+              title: 'Language',
+              value: _languageController.currentLanguageLabel,
+              color: Colors.green,
+            ),
           ),
         ),
         const SizedBox(width: 12),
@@ -759,6 +778,121 @@ class ProfileView extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showLanguagePicker(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.fromLTRB(18, 14, 18, 22),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF17181D) : Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(22),
+            topRight: Radius.circular(22),
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Obx(
+            () => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.grey[700] : Colors.grey[300],
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                Text(
+                  'Select Language',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _languageOption(
+                  label: 'English (US)',
+                  selected:
+                      _languageController.locale.value.languageCode ==
+                      LanguageController.englishLocale.languageCode,
+                  onTap: () async {
+                    await _languageController.setLanguage(
+                      LanguageController.englishLocale,
+                    );
+                    Get.back();
+                  },
+                ),
+                const SizedBox(height: 8),
+                _languageOption(
+                  label: 'Khmer',
+                  selected:
+                      _languageController.locale.value.languageCode ==
+                      LanguageController.khmerLocale.languageCode,
+                  onTap: () async {
+                    await _languageController.setLanguage(
+                      LanguageController.khmerLocale,
+                    );
+                    Get.back();
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _languageOption({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Get.isDarkMode;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF24262E) : const Color(0xFFF6F7F9),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected
+                  ? Colors.orange
+                  : (isDark
+                        ? const Color(0xFF2F323B)
+                        : const Color(0xFFE7EBF1)),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+              if (selected)
+                const Icon(Icons.check_circle, color: Colors.orange, size: 20),
+            ],
+          ),
+        ),
       ),
     );
   }

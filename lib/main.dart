@@ -2,13 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'app/routes/app_pages.dart';
 import 'app/bindings/initial_binding.dart';
+import 'app/controllers/language_controller.dart';
+import 'app/translations/app_translations.dart';
 import 'core/app_colors.dart';
+
+const String _appFontFamily = 'Khmer OS Battambang';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final initialLocale = await LanguageController.getInitialLocale();
   runApp(
     GetMaterialApp(
       title: "University News App",
+      translations: AppTranslations(),
+      locale: initialLocale,
+      fallbackLocale: LanguageController.englishLocale,
       initialRoute: AppPages.INITIAL,
       initialBinding: InitialBinding(),
       getPages: AppPages.routes,
@@ -16,6 +24,7 @@ Future<void> main() async {
       themeMode: ThemeMode.light,
       theme: ThemeData(
         useMaterial3: true,
+        fontFamily: _appFontFamily,
         brightness: Brightness.light,
         primaryColor: AppColors.primary,
         scaffoldBackgroundColor: AppColors.background,
@@ -63,6 +72,7 @@ Future<void> main() async {
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
+        fontFamily: _appFontFamily,
         brightness: Brightness.dark,
         primaryColor: AppColors.primary,
         scaffoldBackgroundColor: const Color(0xFF121212),

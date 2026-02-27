@@ -1,0 +1,81 @@
+import 'package:get/get.dart';
+
+class AppTranslations extends Translations {
+  @override
+  Map<String, Map<String, String>> get keys => {
+    'en_US': {
+      'app_title': 'University News App',
+      'settings': 'Settings',
+      'language': 'Language',
+      'select_language': 'Select Language',
+      'english_us': 'English (US)',
+      'khmer': 'Khmer',
+      'cancel': 'Cancel',
+      'login_welcome_back': 'Welcome Back',
+      'login_subtitle':
+          'Sign in to see campus updates and connect with your community.',
+      'login_as': 'Login as',
+      'email_address': 'Email address',
+      'password': 'Password',
+      'forgot_password': 'Forgot password?',
+      'sign_in': 'Sign In',
+      'continue_as_guest': 'Continue as Guest',
+      'or_continue_with': 'Or continue with',
+      'no_account_yet': 'No account yet?',
+      'create_one': 'Create one',
+      'please_enter_valid_email': 'Please enter a valid email',
+      'please_enter_password': 'Please enter your password',
+      'info': 'Info',
+      'forgot_password_not_connected':
+          'Forgot password flow is not connected yet.',
+      'google_sign_in': 'Google Sign-In',
+      'facebook_sign_in': 'Facebook Sign-In',
+      'paste_google_token': 'Paste Google idToken',
+      'paste_facebook_token': 'Paste Facebook accessToken',
+      'continue_text': 'Continue',
+      'student': 'Student',
+      'teacher': 'Teacher',
+      'log_out': 'Log Out',
+      'confirm_logout_title': 'Log Out',
+      'confirm_logout_content':
+          'Are you sure you want to log out? You will need to sign in again to access your account.',
+    },
+    'km_KH': {
+      'app_title': 'កម្មវិធីព័ត៌មានសាកលវិទ្យាល័យ',
+      'settings': 'ការកំណត់',
+      'language': 'ភាសា',
+      'select_language': 'ជ្រើសរើសភាសា',
+      'english_us': 'អង់គ្លេស (US)',
+      'khmer': 'ខ្មែរ',
+      'cancel': 'បោះបង់',
+      'login_welcome_back': 'សូមស្វាគមន៍មកវិញ',
+      'login_subtitle':
+          'ចូលគណនីដើម្បីមើលព័ត៌មានបច្ចុប្បន្នភាពនៅសាកលវិទ្យាល័យ និងភ្ជាប់ជាមួយសហគមន៍របស់អ្នក។',
+      'login_as': 'ចូលជា',
+      'email_address': 'អាសយដ្ឋានអ៊ីមែល',
+      'password': 'ពាក្យសម្ងាត់',
+      'forgot_password': 'ភ្លេចពាក្យសម្ងាត់?',
+      'sign_in': 'ចូលគណនី',
+      'continue_as_guest': 'បន្តជាភ្ញៀវ',
+      'or_continue_with': 'ឬបន្តជាមួយ',
+      'no_account_yet': 'មិនទាន់មានគណនី?',
+      'create_one': 'បង្កើតថ្មី',
+      'please_enter_valid_email': 'សូមបញ្ចូលអ៊ីមែលត្រឹមត្រូវ',
+      'please_enter_password': 'សូមបញ្ចូលពាក្យសម្ងាត់របស់អ្នក',
+      'info': 'ព័ត៌មាន',
+      'forgot_password_not_connected':
+          'មុខងារភ្លេចពាក្យសម្ងាត់មិនទាន់ភ្ជាប់នៅឡើយទេ។',
+      'google_sign_in': 'ចូលដោយ Google',
+      'facebook_sign_in': 'ចូលដោយ Facebook',
+      'paste_google_token': 'បិទភ្ជាប់ Google idToken',
+      'paste_facebook_token': 'បិទភ្ជាប់ Facebook accessToken',
+      'continue_text': 'បន្ត',
+      'student': 'និស្សិត',
+      'teacher': 'គ្រូ',
+      'log_out': 'ចាកចេញ',
+      'confirm_logout_title': 'ចាកចេញ',
+      'confirm_logout_content':
+          'តើអ្នកប្រាកដថាចង់ចាកចេញមែនទេ? អ្នកត្រូវចូលម្តងទៀតដើម្បីប្រើគណនីរបស់អ្នក។',
+    },
+  };
+}
