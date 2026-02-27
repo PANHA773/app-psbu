@@ -161,30 +161,57 @@ class AuthService {
 
   static Future<Response> updateProfile({String? name, File? image}) async {
     try {
-      // Get current user to extract ID
-      final currentUser = await getCurrentUser();
-      if (currentUser == null || currentUser['_id'] == null) {
-        throw Exception('Could not get user ID to update profile.');
+      final cleanName = name?.trim();
+      if ((cleanName == null || cleanName.isEmpty) && image == null) {
+        throw Exception('Nothing to update.');
       }
-      final userId = currentUser['_id'];
 
-      final Map<String, dynamic> data = {};
-      if (name != null && name.isNotEmpty) data['name'] = name;
+      final Map<String, dynamic> primaryData = {};
+      if (cleanName != null && cleanName.isNotEmpty) {
+        primaryData['name'] = cleanName;
+      }
 
       if (image != null) {
-        String fileName = image.path.split('/').last;
-        data['avatar'] = await MultipartFile.fromFile(
+        final fileName = image.path.split(RegExp(r'[\\/]')).last;
+        primaryData['avatar'] = await MultipartFile.fromFile(
           image.path,
           filename: fileName,
         );
       }
 
-      FormData formData = FormData.fromMap(data);
+      try {
+        // Preferred route for authenticated user profile update.
+        final formData = FormData.fromMap(primaryData);
+        return await DioClient.dio.put('/auth/profile', data: formData);
+      } on DioException {
+        // Fallback below for older backend route/field combinations.
+      }
 
-      return await DioClient.dio.put(
-        '/auth/profile/$userId', // Append user ID to the URL
-        data: formData,
+      final currentUser = await getCurrentUser();
+      final userId =
+          currentUser?['_id']?.toString() ?? currentUser?['id']?.toString();
+      if (userId == null || userId.isEmpty) {
+        throw Exception('Could not determine user ID for profile update.');
+      }
+
+      final fallbackData = Map<String, dynamic>.from(primaryData);
+      if (image != null) {
+        fallbackData.remove('avatar');
+        final fileName = image.path.split(RegExp(r'[\\/]')).last;
+        fallbackData['image'] = await MultipartFile.fromFile(
+          image.path,
+          filename: fileName,
+        );
+      }
+
+      final formData = FormData.fromMap(fallbackData);
+      return await DioClient.dio.put('/auth/profile/$userId', data: formData);
+    } on DioException catch (e) {
+      final errorMsg = _extractErrorMessage(
+        e.response?.data,
+        fallback: e.message ?? 'Failed to update profile',
       );
+      throw Exception(errorMsg);
     } catch (e) {
       rethrow;
     }
@@ -263,5 +290,19 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_roleKey);
     print('✅ User logged out and role cleared');
+  }
+
+  static String _extractErrorMessage(dynamic data, {String? fallback}) {
+    if (data == null) return fallback ?? 'Server error';
+    if (data is String && data.trim().isNotEmpty) return data;
+    if (data is Map) {
+      final message = data['message'];
+      if (message is String && message.trim().isNotEmpty) return message;
+      final error = data['error'];
+      if (error is String && error.trim().isNotEmpty) return error;
+      final msg = data['msg'];
+      if (msg is String && msg.trim().isNotEmpty) return msg;
+    }
+    return fallback ?? 'Server error';
   }
 }

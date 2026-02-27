@@ -68,7 +68,8 @@ class ProfileController extends GetxController {
 
       Get.snackbar('Success', 'Profile updated successfully');
     } catch (e) {
-      Get.snackbar('Error', 'Failed to update profile: $e');
+      final message = e.toString().replaceFirst('Exception: ', '').trim();
+      Get.snackbar('Error', 'Failed to update profile: $message');
     } finally {
       isLoading.value = false;
     }
