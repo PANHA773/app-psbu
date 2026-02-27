@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 
 import '../../../../core/app_colors.dart';
+import '../../../data/models/announcement_model.dart';
 import '../../../data/models/chat_message_model.dart';
 import '../../../data/models/friend_request_model.dart';
 import '../../../data/models/friend_user_model.dart';
@@ -23,11 +24,12 @@ class _ChatViewState extends State<ChatView>
   late final ChatController controller;
   late final AddFriendController friendController;
   final TextEditingController searchController = TextEditingController();
+  final TextEditingController announcementController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     controller = Get.isRegistered<ChatController>()
         ? Get.find<ChatController>()
         : Get.put(ChatController());
@@ -41,6 +43,7 @@ class _ChatViewState extends State<ChatView>
   void dispose() {
     _tabController.dispose();
     searchController.dispose();
+    announcementController.dispose();
     super.dispose();
   }
 
@@ -84,7 +87,7 @@ class _ChatViewState extends State<ChatView>
             ),
             Obx(() {
               return Text(
-                '${controller.conversations.length} chats • ${friendController.receivedRequests.length} requests',
+                '${controller.conversations.length} chats | ${controller.announcements.length} announcements',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -100,6 +103,7 @@ class _ChatViewState extends State<ChatView>
             icon: Iconsax.refresh,
             onTap: () {
               controller.fetchConversations();
+              controller.fetchAnnouncements();
               friendController.fetchAll();
             },
           ),
@@ -120,7 +124,11 @@ class _ChatViewState extends State<ChatView>
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: [_chatsTab(isDark), _friendsTab(isDark)],
+              children: [
+                _chatsTab(isDark),
+                _friendsTab(isDark),
+                _announcementsTab(isDark),
+              ],
             ),
           ),
         ],
@@ -194,6 +202,11 @@ class _ChatViewState extends State<ChatView>
             _chip(
               '${friendController.friends.length} friends',
               Iconsax.people,
+              isDark,
+            ),
+            _chip(
+              '${controller.announcements.length} announcements',
+              Iconsax.notification,
               isDark,
             ),
           ],
@@ -325,6 +338,12 @@ class _ChatViewState extends State<ChatView>
             iconMargin: EdgeInsets.only(bottom: 4),
             icon: Icon(Iconsax.people, size: 16),
             text: 'Friends',
+          ),
+          Tab(
+            height: 40,
+            iconMargin: EdgeInsets.only(bottom: 4),
+            icon: Icon(Iconsax.notification, size: 16),
+            text: 'Announcements',
           ),
         ],
       ),
@@ -561,6 +580,161 @@ class _ChatViewState extends State<ChatView>
         ],
       );
     });
+  }
+
+  Widget _announcementsTab(bool isDark) {
+    return Obx(() {
+      if (controller.isAnnouncementsLoading.value &&
+          controller.announcements.isEmpty) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      final items = controller.announcements;
+
+      return Column(
+        children: [
+          if (controller.isAdmin)
+            _announcementComposer(isDark)
+          else
+            _infoTile('Only admins can post announcements.'),
+          Expanded(
+            child: items.isEmpty
+                ? _emptyState(
+                    'No announcements yet',
+                    'Announcements from admins will appear here in real time.',
+                  )
+                : RefreshIndicator(
+                    onRefresh: () =>
+                        controller.fetchAnnouncements(showLoader: false),
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(18, 6, 18, 90),
+                      itemCount: items.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) =>
+                          _announcementTile(items[index], isDark),
+                    ),
+                  ),
+          ),
+        ],
+      );
+    });
+  }
+
+  Widget _announcementComposer(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(18, 8, 18, 4),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1B1C22) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2B2D35) : const Color(0xFFE9ECF1),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: announcementController,
+              minLines: 1,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Write an announcement for everyone...',
+                border: InputBorder.none,
+                hintStyle: TextStyle(
+                  fontSize: 12.5,
+                  color: isDark ? Colors.grey[500] : Colors.grey[500],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          FilledButton(
+            onPressed: () {
+              final text = announcementController.text.trim();
+              if (text.isEmpty) return;
+              controller.sendAnnouncement(text);
+              announcementController.clear();
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              minimumSize: const Size(42, 38),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Icon(Iconsax.send_1, size: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _announcementTile(AnnouncementModel item, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1B1C22) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2B2D35) : const Color(0xFFE9ECF1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.16),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Iconsax.notification_bing,
+                  color: AppColors.primary,
+                  size: 15,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  item.sender.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.grey[100] : Colors.black87,
+                  ),
+                ),
+              ),
+              Text(
+                _formatAnnouncementTime(item.createdAt),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            item.content,
+            style: TextStyle(
+              fontSize: 13.5,
+              height: 1.4,
+              color: isDark ? Colors.grey[200] : Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _requestTile(FriendRequestModel request, bool isDark) {
@@ -969,6 +1143,7 @@ class _ChatViewState extends State<ChatView>
                 onTap: () {
                   Get.back();
                   controller.fetchConversations();
+                  controller.fetchAnnouncements();
                   friendController.fetchAll();
                 },
               ),
@@ -984,6 +1159,19 @@ class _ChatViewState extends State<ChatView>
     final uri = Uri.tryParse(raw.trim());
     if (uri == null || !uri.hasScheme || uri.host.isEmpty) return null;
     return raw.trim();
+  }
+
+  String _formatAnnouncementTime(DateTime time) {
+    final now = DateTime.now();
+    final isToday =
+        now.year == time.year && now.month == time.month && now.day == time.day;
+    if (isToday) {
+      final hour = time.hour % 12 == 0 ? 12 : time.hour % 12;
+      final minute = time.minute.toString().padLeft(2, '0');
+      final suffix = time.hour >= 12 ? 'PM' : 'AM';
+      return '$hour:$minute $suffix';
+    }
+    return '${time.day}/${time.month}/${time.year}';
   }
 
   String get _searchQuery => searchController.text.trim().toLowerCase();

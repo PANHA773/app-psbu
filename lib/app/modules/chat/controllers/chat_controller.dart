@@ -1,4 +1,7 @@
 import 'package:get/get.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
+import 'package:university_news_app/app/config.dart';
+import '../../../data/models/announcement_model.dart';
 import '../../../data/models/chat_message_model.dart';
 import '../../../data/services/chat_service.dart';
 import '../../../data/services/auth_service.dart';
@@ -38,10 +41,13 @@ class ChatController extends GetxController {
   final RxList<ChatSender> conversations = <ChatSender>[].obs;
   final RxList<ChatMessageModel> conversationMessages =
       <ChatMessageModel>[].obs;
+  final RxList<AnnouncementModel> announcements = <AnnouncementModel>[].obs;
   final RxBool isLoading = false.obs;
+  final RxBool isAnnouncementsLoading = false.obs;
   final RxBool isTypingInConversation = false.obs;
   final RxBool isOtherUserTyping = false.obs;
   final RxString error = ''.obs;
+  final RxString announcementError = ''.obs;
   final Rx<ChatSender?> selectedUser = Rx<ChatSender?>(null);
   final RxMap<String, dynamic> currentUser = <String, dynamic>{}.obs;
 
@@ -54,8 +60,15 @@ class ChatController extends GetxController {
   String? _recordingPath;
   Timer? _recordingTimer;
   Timer? _conversationRealtimeTimer;
+  io.Socket? _announcementSocket;
   bool _isStartingRecording = false;
   bool _isFetchingConversation = false;
+  bool _isFetchingAnnouncements = false;
+
+  bool get isAdmin {
+    final role = currentUser['role']?.toString().toLowerCase();
+    return role == 'admin';
+  }
 
   List<ChatSender> get recentConversations {
     return conversations;
@@ -66,6 +79,8 @@ class ChatController extends GetxController {
     super.onInit();
     fetchCurrentUser();
     fetchConversations();
+    fetchAnnouncements();
+    _connectAnnouncementSocket();
   }
 
   Future<void> fetchCurrentUser() async {
@@ -77,6 +92,70 @@ class ChatController extends GetxController {
     } catch (e) {
       print('Failed to fetch current user: $e');
     }
+  }
+
+  Future<void> fetchAnnouncements({bool showLoader = true}) async {
+    if (_isFetchingAnnouncements) return;
+    try {
+      _isFetchingAnnouncements = true;
+      if (showLoader) isAnnouncementsLoading.value = true;
+      announcementError.value = '';
+      final items = await _chatService.getAnnouncements();
+      announcements.assignAll(items);
+      _sortAnnouncements();
+    } catch (e) {
+      print('Announcements Error: $e');
+      announcementError.value = 'Failed to load announcements: $e';
+    } finally {
+      if (showLoader) isAnnouncementsLoading.value = false;
+      _isFetchingAnnouncements = false;
+    }
+  }
+
+  Future<void> sendAnnouncement(String content) async {
+    final trimmed = content.trim();
+    if (trimmed.isEmpty) return;
+
+    try {
+      final created = await _chatService.sendAnnouncement(trimmed);
+      _upsertAnnouncement(created);
+    } catch (e) {
+      print('Send Announcement Error: $e');
+      Get.snackbar('Error', 'Failed to send announcement');
+    }
+  }
+
+  Future<void> _connectAnnouncementSocket() async {
+    final token = await AuthService.getToken();
+    if (token == null || token.isEmpty) return;
+
+    _announcementSocket?.disconnect();
+    _announcementSocket?.dispose();
+
+    _announcementSocket = io.io(
+      AppConfig.baseUrl,
+      io.OptionBuilder()
+          .setTransports(['websocket'])
+          .disableAutoConnect()
+          .setExtraHeaders({'Authorization': 'Bearer $token'})
+          .build(),
+    );
+
+    _announcementSocket?.onConnect((_) {
+      print('Connected to announcement socket');
+    });
+
+    _announcementSocket?.on('announcement_message', (data) {
+      try {
+        final parsed = _normalizeAnnouncementData(data);
+        if (parsed == null) return;
+        _upsertAnnouncement(parsed);
+      } catch (e) {
+        print('Announcement socket parse error: $e');
+      }
+    });
+
+    _announcementSocket?.connect();
   }
 
   void setSelectedUser(ChatSender user) {
@@ -304,9 +383,41 @@ class ChatController extends GetxController {
     }
   }
 
+  AnnouncementModel? _normalizeAnnouncementData(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      final raw = data['announcement'] ?? data['data'] ?? data;
+      if (raw is Map<String, dynamic>) return AnnouncementModel.fromJson(raw);
+      if (raw is Map) {
+        return AnnouncementModel.fromJson(Map<String, dynamic>.from(raw));
+      }
+    }
+
+    if (data is Map) {
+      return AnnouncementModel.fromJson(Map<String, dynamic>.from(data));
+    }
+
+    return null;
+  }
+
+  void _upsertAnnouncement(AnnouncementModel item) {
+    final index = announcements.indexWhere((a) => a.id == item.id);
+    if (index >= 0) {
+      announcements[index] = item;
+    } else {
+      announcements.add(item);
+    }
+    _sortAnnouncements();
+  }
+
+  void _sortAnnouncements() {
+    announcements.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  }
+
   @override
   void onClose() {
     _conversationRealtimeTimer?.cancel();
+    _announcementSocket?.disconnect();
+    _announcementSocket?.dispose();
     _audioRecorder.dispose();
     _recordingTimer?.cancel();
     super.onClose();

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../models/announcement_model.dart';
 import '../models/chat_message_model.dart';
 import 'dio_client.dart';
 
@@ -137,6 +138,45 @@ class ChatService {
     }
   }
 
+  Future<List<AnnouncementModel>> getAnnouncements() async {
+    try {
+      final response = await _dio.get('/chat/announcements');
+
+      final List<dynamic> data = _extractList(
+        response.data,
+        preferredKeys: const ['announcements', 'data'],
+      );
+
+      return data.map((json) => _mapToAnnouncement(json)).toList();
+    } on DioException catch (e) {
+      final errorMsg =
+          _extractErrorMessage(e.response?.data, fallback: e.message) ??
+          'Failed to load announcements';
+      throw Exception(errorMsg);
+    } catch (e) {
+      throw Exception('Unexpected error: $e');
+    }
+  }
+
+  Future<AnnouncementModel> sendAnnouncement(String content) async {
+    try {
+      final response = await _dio.post(
+        '/chat/announcements',
+        data: {'content': content},
+      );
+
+      final payload = _extractMap(response.data);
+      return _mapToAnnouncement(payload);
+    } on DioException catch (e) {
+      final errorMsg =
+          _extractErrorMessage(e.response?.data, fallback: e.message) ??
+          'Failed to send announcement';
+      throw Exception(errorMsg);
+    } catch (e) {
+      throw Exception('Unexpected error: $e');
+    }
+  }
+
   /// Safely extracts a list from a variety of common API shapes.
   List<dynamic> _extractList(
     dynamic raw, {
@@ -190,6 +230,28 @@ class ChatService {
       return ChatSender.fromJson(Map<String, dynamic>.from(json));
     }
     throw Exception('Invalid conversation item type: ${json.runtimeType}');
+  }
+
+  AnnouncementModel _mapToAnnouncement(dynamic json) {
+    if (json is Map<String, dynamic>) return AnnouncementModel.fromJson(json);
+    if (json is Map) {
+      return AnnouncementModel.fromJson(Map<String, dynamic>.from(json));
+    }
+    throw Exception('Invalid announcement item type: ${json.runtimeType}');
+  }
+
+  Map<String, dynamic> _extractMap(dynamic raw) {
+    if (raw is Map<String, dynamic>) return raw;
+
+    if (raw is Map) {
+      final map = Map<String, dynamic>.from(raw);
+      final nested = map['announcement'] ?? map['data'];
+      if (nested is Map<String, dynamic>) return nested;
+      if (nested is Map) return Map<String, dynamic>.from(nested);
+      return map;
+    }
+
+    throw Exception('Unexpected response format from server');
   }
 
   String? _extractErrorMessage(dynamic data, {String? fallback}) {
