@@ -35,8 +35,8 @@ class ChatMessageModel {
       image: _parseMediaUrl(json['image']),
       video: _parseMediaUrl(json['video']),
       audio: _parseMediaUrl(json['audio']),
-      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updatedAt'] ?? '') ?? DateTime.now(),
+      createdAt: AppConfig.parseDateTimeLocal(json['createdAt']),
+      updatedAt: AppConfig.parseDateTimeLocal(json['updatedAt']),
     );
   }
 
@@ -71,9 +71,19 @@ class ChatSender {
       name: json['name'] ?? json['fullName'] ?? 'Unknown',
       email: json['email'] ?? '',
       role: json['role'] ?? 'user',
-      avatar: ChatMessageModel._parseMediaUrl(json['avatar']),
+      avatar: _parseAvatarUrl(json['avatar']),
       bio: json['bio'],
       gender: json['gender'],
     );
+  }
+
+  static String? _parseAvatarUrl(dynamic value) {
+    final raw = value?.toString() ?? '';
+    if (raw.isEmpty) return null;
+
+    // Legacy upload paths often point to deleted files and spam 404s.
+    if (raw.startsWith('/uploads/') || raw.contains('/uploads/')) return null;
+
+    return ChatMessageModel._parseMediaUrl(raw);
   }
 }

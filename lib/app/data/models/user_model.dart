@@ -31,18 +31,8 @@ class UserModel {
         ? json['_id'][r'$oid'] ?? ''
         : json['_id']?.toString() ?? '';
 
-    // Parse createdAt
-    DateTime parseDate(dynamic value) {
-      if (value is Map && value.containsKey(r'$date')) {
-        return DateTime.tryParse(value[r'$date'].toString()) ?? DateTime.now();
-      } else if (value is String) {
-        return DateTime.tryParse(value) ?? DateTime.now();
-      }
-      return DateTime.now();
-    }
-
-    final createdAt = parseDate(json['createdAt']);
-    final updatedAt = parseDate(json['updatedAt']);
+    final createdAt = AppConfig.parseDateTimeLocal(json['createdAt']);
+    final updatedAt = AppConfig.parseDateTimeLocal(json['updatedAt']);
 
     // Parse settings
     final settingsData = json['settings'] as Map<String, dynamic>?;

@@ -110,6 +110,10 @@ class ChatAlertService extends GetxService {
       await stop();
       return;
     }
+    if (Get.currentRoute == Routes.CHAT ||
+        Get.currentRoute == Routes.CONVERSATION) {
+      return;
+    }
 
     try {
       if (_currentUserId == null) {

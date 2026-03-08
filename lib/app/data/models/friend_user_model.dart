@@ -27,6 +27,8 @@ class FriendUser {
 
   static String? _parseAvatarUrl(dynamic value) {
     if (value == null || value.toString().isEmpty) return null;
-    return AppConfig.transformUrl(value.toString());
+    final raw = value.toString();
+    if (raw.startsWith('/uploads/') || raw.contains('/uploads/')) return null;
+    return AppConfig.transformUrl(raw);
   }
 }

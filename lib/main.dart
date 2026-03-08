@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
 import 'app/routes/app_pages.dart';
 import 'app/bindings/initial_binding.dart';
@@ -10,6 +11,11 @@ const String _appFontFamily = 'Khmer OS Battambang';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Firebase initialization skipped: $e');
+  }
   final initialLocale = await LanguageController.getInitialLocale();
   runApp(
     GetMaterialApp(

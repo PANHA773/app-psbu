@@ -1,3 +1,5 @@
+import '../../config.dart';
+
 class AnnouncementModel {
   final String id;
   final String content;
@@ -24,12 +26,8 @@ class AnnouncementModel {
     return AnnouncementModel(
       id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
       content: json['content']?.toString() ?? '',
-      createdAt:
-          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
-          DateTime.now(),
-      updatedAt:
-          DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
-          DateTime.now(),
+      createdAt: AppConfig.parseDateTimeLocal(json['createdAt']),
+      updatedAt: AppConfig.parseDateTimeLocal(json['updatedAt']),
       sender: AnnouncementSender.fromJson(senderMap),
     );
   }

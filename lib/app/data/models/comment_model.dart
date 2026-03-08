@@ -47,7 +47,7 @@ class CommentModel {
       authorId: authorId,
       authorAvatar: _parseMediaUrl(avatar),
       createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'])
+          ? AppConfig.tryParseDateTimeLocal(json['createdAt'])
           : null,
     );
   }

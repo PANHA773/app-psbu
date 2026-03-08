@@ -74,7 +74,7 @@ class GoodsView extends GetView<GoodsController> {
               ).createShader(Rect.fromLTWH(0, 0, bounds.width, bounds.height));
             },
             child: const Text(
-              'Saved Goods',
+              'Favorite',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,

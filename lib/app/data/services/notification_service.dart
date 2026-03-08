@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'dio_client.dart';
+import '../../config.dart';
 
 class NotificationService {
   static Future<List<NotificationModel>> getNotifications() async {
@@ -58,8 +59,8 @@ class NotificationModel {
       link: json['link'],
       isRead: json['isRead'],
       message: json['message'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: AppConfig.parseDateTimeLocal(json['createdAt']),
+      updatedAt: AppConfig.parseDateTimeLocal(json['updatedAt']),
     );
   }
 }

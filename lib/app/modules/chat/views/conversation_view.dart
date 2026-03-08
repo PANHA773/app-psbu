@@ -860,9 +860,10 @@ class _ConversationViewState extends State<ConversationView> {
   }
 
   String _formatTime(DateTime time) {
-    final hour = time.hour % 12 == 0 ? 12 : time.hour % 12;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final suffix = time.hour >= 12 ? 'PM' : 'AM';
+    final local = time.toLocal();
+    final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+    final minute = local.minute.toString().padLeft(2, '0');
+    final suffix = local.hour >= 12 ? 'PM' : 'AM';
     return '$hour:$minute $suffix';
   }
 
@@ -870,6 +871,7 @@ class _ConversationViewState extends State<ConversationView> {
     if (raw == null) return null;
     final value = raw.trim();
     if (value.isEmpty) return null;
+    if (value.contains('/uploads/')) return null;
     final uri = Uri.tryParse(value);
     if (uri == null || !uri.hasScheme || uri.host.isEmpty) return null;
     return value;

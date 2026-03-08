@@ -1,10 +1,12 @@
 import 'package:get/get.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
+import 'package:firebase_core/firebase_core.dart';
 import 'package:university_news_app/app/config.dart';
 import '../../../data/models/announcement_model.dart';
 import '../../../data/models/chat_message_model.dart';
 import '../../../data/services/chat_service.dart';
 import '../../../data/services/auth_service.dart';
+import '../../../data/services/realtime_chat_service.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
@@ -18,6 +20,7 @@ class ChatController extends GetxController {
       if (userId != null) {
         fetchConversationMessages(userId);
       }
+      await _publishRealtimeEvent('message_edited');
     } catch (e) {
       print('Edit Message Error: $e');
       Get.snackbar('Error', 'Failed to edit message');
@@ -31,6 +34,7 @@ class ChatController extends GetxController {
       if (userId != null) {
         fetchConversationMessages(userId);
       }
+      await _publishRealtimeEvent('message_deleted');
     } catch (e) {
       print('Delete Message Error: $e');
       Get.snackbar('Error', 'Failed to delete message');
@@ -38,6 +42,7 @@ class ChatController extends GetxController {
   }
 
   final ChatService _chatService = ChatService();
+  final RealtimeChatService _realtimeChatService = RealtimeChatService();
   final RxList<ChatSender> conversations = <ChatSender>[].obs;
   final RxList<ChatMessageModel> conversationMessages =
       <ChatMessageModel>[].obs;
@@ -59,7 +64,9 @@ class ChatController extends GetxController {
   final RxInt pendingRecordingDuration = 0.obs;
   String? _recordingPath;
   Timer? _recordingTimer;
-  Timer? _conversationRealtimeTimer;
+  Timer? _conversationPollingTimer;
+  StreamSubscription<RealtimeConversationEvent?>? _conversationRealtimeSubscription;
+  String? _lastRealtimeEventId;
   io.Socket? _announcementSocket;
   bool _isStartingRecording = false;
   bool _isFetchingConversation = false;
@@ -166,17 +173,81 @@ class ChatController extends GetxController {
   }
 
   void startRealtimeUpdates(String userId) {
-    _conversationRealtimeTimer?.cancel();
-    _conversationRealtimeTimer = Timer.periodic(const Duration(seconds: 2), (
+    stopRealtimeUpdates();
+    if (Firebase.apps.isEmpty) {
+      _startConversationPolling(userId);
+      return;
+    }
+
+    _ensureCurrentUserId((currentUserId) {
+      final conversationId =
+          _realtimeChatService.conversationId(currentUserId, userId);
+      _conversationRealtimeSubscription =
+          _realtimeChatService.watchConversationEvents(conversationId).listen(
+        (event) {
+          if (event == null) {
+            return;
+          }
+          if (_lastRealtimeEventId == null) {
+            _lastRealtimeEventId = event.id;
+            return;
+          }
+          if (_lastRealtimeEventId == event.id) {
+            return;
+          }
+          _lastRealtimeEventId = event.id;
+
+          final initiatorId = event.payload['initiatorId']?.toString();
+          if (initiatorId == currentUserId) {
+            return;
+          }
+
+          fetchConversationMessages(userId, showLoader: false);
+          fetchConversations();
+        },
+        onError: (error) {
+          print('Realtime chat listener error: $error');
+          _startConversationPolling(userId);
+        },
+      );
+    });
+  }
+
+  void stopRealtimeUpdates() {
+    _conversationPollingTimer?.cancel();
+    _conversationPollingTimer = null;
+    _conversationRealtimeSubscription?.cancel();
+    _conversationRealtimeSubscription = null;
+    _lastRealtimeEventId = null;
+  }
+
+  void _startConversationPolling(String userId) {
+    _conversationPollingTimer?.cancel();
+    _conversationPollingTimer = Timer.periodic(const Duration(seconds: 3), (
       _,
     ) {
       fetchConversationMessages(userId, showLoader: false);
     });
   }
 
-  void stopRealtimeUpdates() {
-    _conversationRealtimeTimer?.cancel();
-    _conversationRealtimeTimer = null;
+  void _ensureCurrentUserId(void Function(String) onReady) {
+    final cached = currentUser['_id']?.toString();
+    if (cached != null && cached.isNotEmpty) {
+      onReady(cached);
+      return;
+    }
+
+    AuthService.getCurrentUser().then((user) {
+      if (user != null) {
+        currentUser.value = user;
+        final id = user['_id']?.toString();
+        if (id != null && id.isNotEmpty) {
+          onReady(id);
+        }
+      }
+    }).onError((error, _) {
+      print('Realtime chat current user error: $error');
+    });
   }
 
   void onDraftChanged(String value) {
@@ -237,6 +308,7 @@ class ChatController extends GetxController {
         fetchConversationMessages(userId);
       }
       fetchConversations();
+      await _publishRealtimeEvent('message_sent');
       isTypingInConversation.value = false;
     } catch (e) {
       print('Send Message Error: $e');
@@ -359,12 +431,44 @@ class ChatController extends GetxController {
       await _chatService.sendVoiceMessage(path, recipientId: userId);
       fetchConversationMessages(userId);
       fetchConversations();
+      await _publishRealtimeEvent('voice_message');
       return true;
     } catch (e) {
       print('Send Voice Message Error: $e');
       Get.snackbar('Error', 'Failed to send voice message');
       return false;
     }
+  }
+
+  Future<void> _publishRealtimeEvent(String action) async {
+    if (Firebase.apps.isEmpty) return;
+    final conversationId = _buildActiveConversationId();
+    if (conversationId == null) return;
+
+    final currentUserId = currentUser['_id']?.toString();
+    if (currentUserId == null || currentUserId.isEmpty) return;
+
+    try {
+      await _realtimeChatService.publishConversationEvent(
+        conversationId: conversationId,
+        action: action,
+        payload: {'initiatorId': currentUserId},
+      );
+    } catch (e) {
+      print('Realtime event publish error: $e');
+    }
+  }
+
+  String? _buildActiveConversationId() {
+    final otherId = selectedUser.value?.id;
+    final currentUserId = currentUser['_id']?.toString();
+    if (otherId == null ||
+        otherId.isEmpty ||
+        currentUserId == null ||
+        currentUserId.isEmpty) {
+      return null;
+    }
+    return _realtimeChatService.conversationId(currentUserId, otherId);
   }
 
   Future<void> _clearPendingRecording({required bool deleteFile}) async {
@@ -415,7 +519,7 @@ class ChatController extends GetxController {
 
   @override
   void onClose() {
-    _conversationRealtimeTimer?.cancel();
+    stopRealtimeUpdates();
     _announcementSocket?.disconnect();
     _announcementSocket?.dispose();
     _audioRecorder.dispose();

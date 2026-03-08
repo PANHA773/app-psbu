@@ -113,7 +113,7 @@ class StoryModel {
 
   static DateTime? _parseDate(dynamic value) {
     if (value == null) return null;
-    return DateTime.tryParse(value.toString());
+    return AppConfig.tryParseDateTimeLocal(value);
   }
 
   static int _parseViewerCount(Map<String, dynamic> json) {

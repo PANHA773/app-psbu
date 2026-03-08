@@ -85,6 +85,7 @@ class _AudioMessageBubbleState extends State<AudioMessageBubble> {
 
   @override
   Widget build(BuildContext context) {
+    final createdAtLocal = widget.createdAt.toLocal();
     return Container(
       width: 220,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -179,7 +180,7 @@ class _AudioMessageBubbleState extends State<AudioMessageBubble> {
           Align(
             alignment: Alignment.bottomRight,
             child: Text(
-              '${widget.createdAt.hour}:${widget.createdAt.minute.toString().padLeft(2, '0')}',
+              '${createdAtLocal.hour}:${createdAtLocal.minute.toString().padLeft(2, '0')}',
               style: TextStyle(
                 color: widget.isMe ? Colors.white60 : Colors.grey[500],
                 fontSize: 10,

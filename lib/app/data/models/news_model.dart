@@ -83,7 +83,7 @@ class NewsModel {
       isLiked: json['isLiked'] ?? false,
 
       createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'])
+          ? AppConfig.tryParseDateTimeLocal(json['createdAt'])
           : null,
       isBookmarked: json['isBookmarked'] ?? false,
     );

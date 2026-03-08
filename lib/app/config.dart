@@ -17,6 +17,11 @@ class AppConfig {
 
     String transformed = url;
 
+    // Legacy local upload paths are stale in production and produce 404s.
+    if (transformed.contains('/uploads/')) {
+      return '';
+    }
+
     // If it's a relative path, prepend baseUrl.
     if (!transformed.startsWith('http')) {
       transformed =
@@ -36,5 +41,34 @@ class AppConfig {
     }
 
     return transformed;
+  }
+
+  /// Parses API timestamps and always returns local time.
+  ///
+  /// - Accepts ISO8601 strings (with/without `Z`), `DateTime`, and Mongo-style
+  ///   `{ "$date": "..." }` maps.
+  /// - Uses [fallback] (or `DateTime.now()`) when parsing fails.
+  static DateTime parseDateTimeLocal(
+    dynamic value, {
+    DateTime? fallback,
+  }) {
+    final fb = fallback ?? DateTime.now();
+    final parsed = tryParseDateTimeLocal(value);
+    return parsed ?? fb;
+  }
+
+  /// Same as [parseDateTimeLocal] but returns `null` when parsing fails.
+  static DateTime? tryParseDateTimeLocal(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value.toLocal();
+
+    if (value is Map && value.containsKey(r'$date')) {
+      final raw = value[r'$date'];
+      final parsed = DateTime.tryParse(raw?.toString() ?? '');
+      return parsed?.toLocal();
+    }
+
+    final parsed = DateTime.tryParse(value.toString());
+    return parsed?.toLocal();
   }
 }

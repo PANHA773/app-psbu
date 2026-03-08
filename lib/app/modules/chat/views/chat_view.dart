@@ -1156,22 +1156,27 @@ class _ChatViewState extends State<ChatView>
 
   String? _safeUrl(String? raw) {
     if (raw == null || raw.trim().isEmpty) return null;
-    final uri = Uri.tryParse(raw.trim());
+    final value = raw.trim();
+    if (value.contains('/uploads/')) return null;
+    final uri = Uri.tryParse(value);
     if (uri == null || !uri.hasScheme || uri.host.isEmpty) return null;
-    return raw.trim();
+    return value;
   }
 
   String _formatAnnouncementTime(DateTime time) {
+    final local = time.toLocal();
     final now = DateTime.now();
     final isToday =
-        now.year == time.year && now.month == time.month && now.day == time.day;
+        now.year == local.year &&
+        now.month == local.month &&
+        now.day == local.day;
     if (isToday) {
-      final hour = time.hour % 12 == 0 ? 12 : time.hour % 12;
-      final minute = time.minute.toString().padLeft(2, '0');
-      final suffix = time.hour >= 12 ? 'PM' : 'AM';
+      final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+      final minute = local.minute.toString().padLeft(2, '0');
+      final suffix = local.hour >= 12 ? 'PM' : 'AM';
       return '$hour:$minute $suffix';
     }
-    return '${time.day}/${time.month}/${time.year}';
+    return '${local.day}/${local.month}/${local.year}';
   }
 
   String get _searchQuery => searchController.text.trim().toLowerCase();
